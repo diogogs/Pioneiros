@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎮 Dashboard de Gestão - Domínio de Território</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .admin-header {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .admin-header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .game-controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .control-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .control-btn.start {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .control-btn.stop {
+            background: #f44336;
+            color: white;
+        }
+        
+        .control-btn.reset {
+            background: #ff9800;
+            color: white;
+        }
+        
+        .control-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .control-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .dashboard-card {
+            background: rgba(255,255,255,0.95);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 15px;
+        }
+        
+        .card-title {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .game-status {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .status-inactive {
+            background: #ffebee;
+            color: #c62828;
+        }
+        
+        .status-active {
+            background: #e8f5e8;
+            color: #2e7d32;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .teams-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+        
+        .team-card {
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .team-card.team-a {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+            color: white;
+        }
+        
+        .team-card.team-b {
+            background: linear-gradient(135deg, #2196f3 0%, #1976d2 100%);
+            color: white;
+        }
+        
+        .team-card.team-c {
+            background: linear-gradient(135deg, #ff9800 0%, #f57c00 100%);
+            color: white;
+        }
+        
+        .team-name {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .team-score {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .team-territories {
+            font-size: 0.9em;
+            opacity: 0.9;
+        }
+        
+        .score-controls {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 15px;
+        }
+        
+        .score-btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .score-btn:hover {
+            background: rgba(255,255,255,0.3);
+            transform: scale(1.05);
+        }
+        
+        .territories-section {
+            max-height: 600px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        
+        .territory-item {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .territory-item.owned-a { border-color: #f44336; background: linear-gradient(135deg, #fff 0%, #ffebee 100%); }
+        .territory-item.owned-b { border-color: #2196f3; background: linear-gradient(135deg, #fff 0%, #e3f2fd 100%); }
+        .territory-item.owned-c { border-color: #ff9800; background: linear-gradient(135deg, #fff 0%, #fff3e0 100%); }
+        
+        .territory-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .territory-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .territory-owner {
+            padding: 6px 15px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .owner-a { background: #f44336; }
+        .owner-b { background: #2196f3; }
+        .owner-c { background: #ff9800; }
+        .owner-neutral { background: #bdbdbd; }
+        
+        .territory-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .stat-item {
+            text-align: center;
+            background: rgba(102, 126, 234, 0.1);
+            padding: 10px;
+            border-radius: 10px;
+        }
+        
+        .stat-value {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #667eea;
+            display: block;
+        }
+        
+        .stat-label {
+            font-size: 0.8em;
+            color: #666;
+        }
+        
+        .territory-controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        
+        .territory-btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+        }
+        
+        .btn-edit {
+            background: #2196f3;
+            color: white;
+        }
+        
+        .btn-assign {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .btn-neutral {
+            background: #ff9800;
+            color: white;
+        }
+        
+        .territory-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+        
+        .map-container {
+            height: 400px;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-top: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .add-territory-btn {
+            background: #4caf50;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1.1em;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .add-territory-btn:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            border-bottom: 2px solid #f0f0f0;
+            padding-bottom: 15px;
+        }
+        
+        .modal-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        
+        .close:hover {
+            color: #667eea;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .form-select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            background: white;
+            cursor: pointer;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+            margin-top: 30px;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover, .btn-secondary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.2);
+        }
+        
+        .connection-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            z-index: 999;
+        }
+        
+        .connected {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .disconnected {
+            background: #f44336;
+            color: white;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #4caf50;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 1001;
+            display: none;
+            animation: slideDown 0.5s ease;
+        }
+        
+        .notification.error {
+            background: #f44336;
+        }
+        
+        .notification.warning {
+            background: #ff9800;
+        }
+        
+        @keyframes slideDown {
+            from { transform: translateX(-50%) translateY(-100%); }
+            to { transform: translateX(-50%) translateY(0); }
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-indicator" id="connectionIndicator">
+        🔄 A conectar...
+    </div>
+    
+    <div class="notification" id="notification"></div>
+    
+    <div class="admin-container">
+        <div class="admin-header">
+            <h1>🎮 Dashboard de Gestão</h1>
+            <p>Controlo Total do Jogo de Domínio de Território</p>
+            
+            <div class="game-controls">
+                <button class="control-btn start" id="startGameBtn" onclick="startGame()">
+                    ▶️ Iniciar Jogo
+                </button>
+                <button class="control-btn stop" id="stopGameBtn" onclick="stopGame()" disabled>
+                    ⏹️ Parar Jogo
+                </button>
+                <button class="control-btn reset" onclick="resetGame()">
+                    🔄 Reset Completo
+                </button>
+            </div>
+        </div>
+        
+        <div class="dashboard-grid">
+            <!-- Status do Jogo -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h3 class="card-title">📊 Estado do Jogo</h3>
+                    <div class="game-status" id="gameStatus">
+                        <span class="status-inactive">⏸️ Inativo</span>
+                    </div>
+                </div>
+                
+                <div class="teams-section" id="teamsSection">
+                    <!-- Teams will be populated here -->
+                </div>
+            </div>
+            
+            <!-- Mapa e Controlos -->
+            <div class="dashboard-card">
+                <div class="card-header">
+                    <h3 class="card-title">🗺️ Mapa de Controlo</h3>
+                </div>
+                
+                <div class="map-container">
+                    <div id="adminMap"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Territórios -->
+        <div class="dashboard-card">
+            <div class="card-header">
+                <h3 class="card-title">🏰 Gestão de Territórios</h3>
+                <button class="add-territory-btn" onclick="openAddTerritoryModal()">
+                    ➕ Adicionar Território
+                </button>
+            </div>
+            
+            <div class="territories-section" id="territoriesSection">
+                <!-- Territories will be populated here -->
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal para Editar/Adicionar Território -->
+    <div id="territoryModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title" id="modalTitle">Adicionar Território</h2>
+                <span class="close" onclick="closeTerritoryModal()">&times;</span>
+            </div>
+            
+            <form id="territoryForm">
+                <div class="form-group">
+                    <label class="form-label">Nome do Território:</label>
+                    <input type="text" class="form-input" id="territoryName" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Descrição:</label>
+                    <input type="text" class="form-input" id="territoryDescription">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Latitude:</label>
+                    <input type="number" step="0.000001" class="form-input" id="territoryLat" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Longitude:</label>
+                    <input type="number" step="0.000001" class="form-input" id="territoryLng" required>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Raio de Captura (metros):</label>
+                    <input type="number" class="form-input" id="territoryRadius" min="10" max="500" value="50">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Pontos por Minuto:</label>
+                    <input type="number" class="form-input" id="territoryPoints" min="1" max="20" value="5">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Dificuldade (1-5):</label>
+                    <select class="form-select" id="territoryDifficulty">
+                        <option value="1">⭐ Muito Fácil</option>
+                        <option value="2">⭐⭐ Fácil</option>
+                        <option value="3" selected>⭐⭐⭐ Médio</option>
+                        <option value="4">⭐⭐⭐⭐ Difícil</option>
+                        <option value="5">⭐⭐⭐⭐⭐ Muito Difícil</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Tipo:</label>
+                    <select class="form-select" id="territoryType">
+                        <option value="central">🏘️ Central</option>
+                        <option value="intermediate">🌳 Intermédio</option>
+                        <option value="remote">🏔️ Remoto</option>
+                        <option value="legendary">👑 Lendário</option>
+                    </select>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn-secondary" onclick="closeTerritoryModal()">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module">
+        // Firebase Configuration
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, onValue, set, remove, push, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyDMQNN57N8v2WJaIL_sbQEptMhVD0_96M4",
+            authDomain: "raid-pioneiros-2025.firebaseapp.com",
+            databaseURL: "https://raid-pioneiros-2025-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "raid-pioneiros-2025",
+            storageBucket: "raid-pioneiros-2025.firebasestorage.app",
+            messagingSenderId: "364137677559",
+            appId: "1:364137677559:web:2be68cd6dcd6ccbf5ac9f2"
+        };
+        
+        // Global Variables
+        let db = null;
+        let isFirebaseEnabled = false;
+        let adminMap = null;
+        let territoryMarkers = [];
+        let isEditingTerritory = false;
+        let currentEditingId = null;
+        
+        // Game State
+        const gameState = {
+            teams: {
+                A: { score: 0, color: '#f44336', name: 'Equipa Vermelha' },
+                B: { score: 0, color: '#2196f3', name: 'Equipa Azul' },
+                C: { score: 0, color: '#ff9800', name: 'Equipa Laranja' }
+            },
+            territories: {},
+            gameStarted: false,
+            gameActive: false,
+            startTime: null
+        };
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initFirebase();
+            initMap();
+            loadGameData();
+            renderInterface();
+            
+            // Form submission
+            document.getElementById('territoryForm').addEventListener('submit', handleTerritorySubmit);
+        });
+        
+        function initFirebase() {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getDatabase(app);
+                isFirebaseEnabled = true;
+                updateConnectionStatus('connected');
+                console.log("🔥 Firebase conectado!");
+                listenForGameUpdates();
+            } catch (error) {
+                console.error("Erro Firebase:", error);
+                updateConnectionStatus('disconnected');
+                showNotification('Erro ao conectar com Firebase', 'error');
+            }
+        }
+        
+        function initMap() {
+            // Centrar no Monte do Paio
+            adminMap = L.map('adminMap').setView([38.0658, -8.7734], 14);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(adminMap);
+            
+            // Click handler para adicionar territórios
+            adminMap.on('click', function(e) {
+                if (isEditingTerritory) {
+                    document.getElementById('territoryLat').value = e.latlng.lat.toFixed(6);
+                    document.getElementById('territoryLng').value = e.latlng.lng.toFixed(6);
+                }
+            });
+        }
+        
+        function updateConnectionStatus(status) {
+            const indicator = document.getElementById('connectionIndicator');
+            if (status === 'connected') {
+                indicator.textContent = '🟢 Conectado';
+                indicator.className = 'connection-indicator connected';
+            } else {
+                indicator.textContent = '🔴 Desconectado';
+                indicator.className = 'connection-indicator disconnected';
+            }
+        }
+        
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 4000);
+        }
+        
+        function loadGameData() {
+            if (!isFirebaseEnabled) return;
+            
+            // Load teams
+            const teamsRef = ref(db, 'raid/domination/teams');
+            onValue(teamsRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    gameState.teams = snapshot.val();
+                }
+                renderTeams();
+            });
+            
+            // Load territories
+            const territoriesRef = ref(db, 'raid/domination/territories');
+            onValue(territoriesRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    gameState.territories = snapshot.val();
+                }
+                renderTerritories();
+                updateMapMarkers();
+            });
+        }
+        
+        function listenForGameUpdates() {
+            if (!isFirebaseEnabled) return;
+            
+            // Game state
+            const gameStateRef = ref(db, 'raid/domination/gameState');
+            onValue(gameStateRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    gameState.gameActive = data.active || false;
+                    gameState.gameStarted = data.started || false;
+                    gameState.startTime = data.startTime;
+                }
+                updateGameStatus();
+            });
+            
+            // Scores
+            const scoresRef = ref(db, 'raid/domination/scores');
+            onValue(scoresRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const scores = snapshot.val();
+                    Object.keys(scores).forEach(team => {
+                        if (gameState.teams[team]) {
+                            gameState.teams[team].score = scores[team] || 0;
+                        }
+                    });
+                    renderTeams();
+                }
+            });
+        }
+        
+        function renderInterface() {
+            renderTeams();
+            renderTerritories();
+            updateGameStatus();
+        }
+        
+        function renderTeams() {
+            const container = document.getElementById('teamsSection');
+            container.innerHTML = '';
+            
+            Object.keys(gameState.teams).forEach(teamId => {
+                const team = gameState.teams[teamId];
+                const territoryCount = Object.values(gameState.territories)
+                    .filter(t => t.owner === teamId).length;
+                
+                const teamDiv = document.createElement('div');
+                teamDiv.className = `team-card team-${teamId.toLowerCase()}`;
+                teamDiv.innerHTML = `
+                    <div class="team-name">${team.name}</div>
+                    <div class="team-score">${team.score}</div>
+                    <div class="team-territories">${territoryCount} territórios</div>
+                    <div class="score-controls">
+                        <button class="score-btn" onclick="adjustScore('${teamId}', -50)">-50</button>
+                        <button class="score-btn" onclick="adjustScore('${teamId}', -10)">-10</button>
+                        <button class="score-btn" onclick="adjustScore('${teamId}', 10)">+10</button>
+                        <button class="score-btn" onclick="adjustScore('${teamId}', 50)">+50</button>
+                    </div>
+                `;
+                
+                container.appendChild(teamDiv);
+            });
+        }
+        
+        function renderTerritories() {
+            const container = document.getElementById('territoriesSection');
+            container.innerHTML = '';
+            
+            Object.keys(gameState.territories).forEach(territoryId => {
+                const territory = gameState.territories[territoryId];
+                
+                const territoryDiv = document.createElement('div');
+                territoryDiv.className = 'territory-item';
+                
+                if (territory.owner) {
+                    territoryDiv.classList.add(`owned-${territory.owner.toLowerCase()}`);
+                }
+                
+                let ownerInfo = 'Neutro';
+                let ownerClass = 'owner-neutral';
+                if (territory.owner && gameState.teams[territory.owner]) {
+                    ownerInfo = gameState.teams[territory.owner].name;
+                    ownerClass = `owner-${territory.owner.toLowerCase()}`;
+                }
+                
+                territoryDiv.innerHTML = `
+                    <div class="territory-header">
+                        <div class="territory-name">${territory.name || territoryId}</div>
+                        <div class="territory-owner ${ownerClass}">${ownerInfo}</div>
+                    </div>
+                    
+                    <div class="territory-stats">
+                        <div class="stat-item">
+                            <span class="stat-value">${territory.pointsPerMinute || 'N/A'}</span>
+                            <span class="stat-label">pts/min</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">${territory.radius || 'N/A'}m</span>
+                            <span class="stat-label">raio</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">${territory.difficulty || 'N/A'}</span>
+                            <span class="stat-label">dificuldade</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">${territory.lat?.toFixed(4) || 'N/A'}</span>
+                            <span class="stat-label">lat</span>
+                        </div>
+                        <div class="stat-item">
+                            <span class="stat-value">${territory.lng?.toFixed(4) || 'N/A'}</span>
+                            <span class="stat-label">lng</span>
+                        </div>
+                    </div>
+                    
+                    <div class="territory-controls">
+                        <button class="territory-btn btn-edit" onclick="editTerritory('${territoryId}')">
+                            ✏️ Editar
+                        </button>
+                        <button class="territory-btn btn-assign" onclick="assignTerritory('${territoryId}', 'A')">
+                            📍 Equipa A
+                        </button>
+                        <button class="territory-btn btn-assign" onclick="assignTerritory('${territoryId}', 'B')">
+                            📍 Equipa B
+                        </button>
+                        <button class="territory-btn btn-assign" onclick="assignTerritory('${territoryId}', 'C')">
+                            📍 Equipa C
+                        </button>
+                        <button class="territory-btn btn-neutral" onclick="assignTerritory('${territoryId}', null)">
+                            🚫 Neutro
+                        </button>
+                        <button class="territory-btn" style="background: #f44336; color: white;" onclick="deleteTerritory('${territoryId}')">
+                            🗑️ Eliminar
+                        </button>
+                    </div>
+                `;
+                
+                container.appendChild(territoryDiv);
+            });
+        }
+        
+        function updateMapMarkers() {
+            // Clear existing markers
+            territoryMarkers.forEach(marker => {
+                adminMap.removeLayer(marker.marker);
+                adminMap.removeLayer(marker.circle);
+            });
+            territoryMarkers = [];
+            
+            // Add territory markers
+            Object.keys(gameState.territories).forEach(territoryId => {
+                const territory = gameState.territories[territoryId];
+                
+                if (territory.lat && territory.lng) {
+                    let color = '#bdbdbd'; // Neutral
+                    if (territory.owner && gameState.teams[territory.owner]) {
+                        color = gameState.teams[territory.owner].color;
+                    }
+                    
+                    const marker = L.circleMarker([territory.lat, territory.lng], {
+                        radius: 8,
+                        fillColor: color,
+                        color: 'white',
+                        weight: 3,
+                        fillOpacity: 0.8
+                    }).addTo(adminMap);
+                    
+                    const circle = L.circle([territory.lat, territory.lng], {
+                        radius: territory.radius || 50,
+                        fillColor: color,
+                        color: color,
+                        weight: 2,
+                        fillOpacity: 0.1,
+                        dashArray: '5, 5'
+                    }).addTo(adminMap);
+                    
+                    marker.bindPopup(`
+                        <b>${territory.name || territoryId}</b><br>
+                        ${territory.description || ''}<br>
+                        <strong>${territory.pointsPerMinute || 0} pts/min</strong><br>
+                        Raio: ${territory.radius || 0}m<br>
+                        Dificuldade: ${'★'.repeat(territory.difficulty || 1)}
+                    `);
+                    
+                    territoryMarkers.push({ marker, circle, territoryId });
+                }
+            });
+        }
+        
+        function updateGameStatus() {
+            const statusElement = document.getElementById('gameStatus');
+            const startBtn = document.getElementById('startGameBtn');
+            const stopBtn = document.getElementById('stopGameBtn');
+            
+            if (gameState.gameActive) {
+                statusElement.innerHTML = '<span class="status-active">🟢 Ativo</span>';
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+            } else {
+                statusElement.innerHTML = '<span class="status-inactive">⏸️ Inativo</span>';
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+            }
+        }
+        
+        // Global functions for UI interaction
+        window.startGame = function() {
+            if (!isFirebaseEnabled) {
+                showNotification('Firebase não conectado', 'error');
+                return;
+            }
+            
+            const gameStateRef = ref(db, 'raid/domination/gameState');
+            set(gameStateRef, {
+                active: true,
+                started: true,
+                startTime: serverTimestamp()
+            });
+            
+            showNotification('🚀 Jogo iniciado!', 'success');
+        };
+        
+        window.stopGame = function() {
+            if (!isFirebaseEnabled) {
+                showNotification('Firebase não conectado', 'error');
+                return;
+            }
+            
+            const gameStateRef = ref(db, 'raid/domination/gameState');
+            set(gameStateRef, {
+                active: false,
+                started: true,
+                startTime: gameState.startTime
+            });
+            
+            showNotification('⏹️ Jogo pausado!', 'warning');
+        };
+        
+        window.resetGame = function() {
+            if (!confirm('⚠️ Tem a certeza que quer fazer reset completo? Isto vai apagar todos os dados!')) {
+                return;
+            }
+            
+            if (!isFirebaseEnabled) {
+                showNotification('Firebase não conectado', 'error');
+                return;
+            }
+            
+            // Reset scores
+            const scoresRef = ref(db, 'raid/domination/scores');
+            set(scoresRef, { A: 0, B: 0, C: 0 });
+            
+            // Reset territories
+            const territoriesRef = ref(db, 'raid/domination/territories');
+            Object.keys(gameState.territories).forEach(territoryId => {
+                const territoryRef = ref(db, `raid/domination/territories/${territoryId}`);
+                set(territoryRef, {
+                    ...gameState.territories[territoryId],
+                    owner: null,
+                    controlTime: 0,
+                    lastUpdate: null
+                });
+            });
+            
+            // Reset game state
+            const gameStateRef = ref(db, 'raid/domination/gameState');
+            set(gameStateRef, {
+                active: false,
+                started: false,
+                startTime: null
+            });
+            
+            showNotification('🔄 Reset completo realizado!', 'success');
+        };
+        
+        window.adjustScore = function(teamId, points) {
+            if (!isFirebaseEnabled) return;
+            
+            const currentScore = gameState.teams[teamId].score || 0;
+            const newScore = Math.max(0, currentScore + points);
+            
+            const scoreRef = ref(db, `raid/domination/scores/${teamId}`);
+            set(scoreRef, newScore);
+            
+            showNotification(`Pontuação ${teamId}: ${points > 0 ? '+' : ''}${points}`, 'success');
+        };
+        
+        window.assignTerritory = function(territoryId, newOwner) {
+            if (!isFirebaseEnabled) return;
+            
+            const territoryRef = ref(db, `raid/domination/territories/${territoryId}`);
+            const updates = {
+                ...gameState.territories[territoryId],
+                owner: newOwner,
+                controlTime: 0,
+                lastUpdate: newOwner ? serverTimestamp() : null
+            };
+            
+            set(territoryRef, updates);
+            
+            const ownerName = newOwner ? gameState.teams[newOwner].name : 'Neutro';
+            showNotification(`Território atribuído a: ${ownerName}`, 'success');
+        };
+        
+        window.openAddTerritoryModal = function() {
+            isEditingTerritory = true;
+            currentEditingId = null;
+            document.getElementById('modalTitle').textContent = 'Adicionar Território';
+            document.getElementById('territoryForm').reset();
+            document.getElementById('territoryModal').style.display = 'block';
+            
+            // Set default coordinates to map center
+            const center = adminMap.getCenter();
+            document.getElementById('territoryLat').value = center.lat.toFixed(6);
+            document.getElementById('territoryLng').value = center.lng.toFixed(6);
+        };
+        
+        window.editTerritory = function(territoryId) {
+            isEditingTerritory = true;
+            currentEditingId = territoryId;
+            const territory = gameState.territories[territoryId];
+            
+            document.getElementById('modalTitle').textContent = 'Editar Território';
+            document.getElementById('territoryName').value = territory.name || '';
+            document.getElementById('territoryDescription').value = territory.description || '';
+            document.getElementById('territoryLat').value = territory.lat || '';
+            document.getElementById('territoryLng').value = territory.lng || '';
+            document.getElementById('territoryRadius').value = territory.radius || 50;
+            document.getElementById('territoryPoints').value = territory.pointsPerMinute || 5;
+            document.getElementById('territoryDifficulty').value = territory.difficulty || 3;
+            document.getElementById('territoryType').value = territory.type || 'intermediate';
+            
+            document.getElementById('territoryModal').style.display = 'block';
+        };
+        
+        window.deleteTerritory = function(territoryId) {
+            if (!confirm(`Tem a certeza que quer eliminar o território "${gameState.territories[territoryId].name || territoryId}"?`)) {
+                return;
+            }
+            
+            if (!isFirebaseEnabled) return;
+            
+            const territoryRef = ref(db, `raid/domination/territories/${territoryId}`);
+            remove(territoryRef);
+            
+            showNotification('Território eliminado!', 'success');
+        };
+        
+        window.closeTerritoryModal = function() {
+            isEditingTerritory = false;
+            currentEditingId = null;
+            document.getElementById('territoryModal').style.display = 'none';
+        };
+        
+        function handleTerritorySubmit(e) {
+            e.preventDefault();
+            
+            if (!isFirebaseEnabled) {
+                showNotification('Firebase não conectado', 'error');
+                return;
+            }
+            
+            const formData = {
+                name: document.getElementById('territoryName').value,
+                description: document.getElementById('territoryDescription').value,
+                lat: parseFloat(document.getElementById('territoryLat').value),
+                lng: parseFloat(document.getElementById('territoryLng').value),
+                radius: parseInt(document.getElementById('territoryRadius').value),
+                pointsPerMinute: parseInt(document.getElementById('territoryPoints').value),
+                difficulty: parseInt(document.getElementById('territoryDifficulty').value),
+                type: document.getElementById('territoryType').value,
+                owner: null,
+                controlTime: 0,
+                lastUpdate: null
+            };
+            
+            let territoryRef;
+            if (currentEditingId) {
+                // Editing existing territory
+                territoryRef = ref(db, `raid/domination/territories/${currentEditingId}`);
+                // Preserve existing owner if editing
+                if (gameState.territories[currentEditingId]) {
+                    formData.owner = gameState.territories[currentEditingId].owner;
+                    formData.controlTime = gameState.territories[currentEditingId].controlTime;
+                    formData.lastUpdate = gameState.territories[currentEditingId].lastUpdate;
+                }
+            } else {
+                // Adding new territory
+                const territoryId = formData.name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+                territoryRef = ref(db, `raid/domination/territories/${territoryId}`);
+            }
+            
+            set(territoryRef, formData);
+            
+            showNotification(currentEditingId ? 'Território atualizado!' : 'Território adicionado!', 'success');
+            closeTerritoryModal();
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('territoryModal');
+            if (event.target === modal) {
+                closeTerritoryModal();
+            }
+        };
+    </script>
+</body>
+</html>
