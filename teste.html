@@ -1,0 +1,1073 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 TESTE - Raid Tecnológico</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .container {
+            max-width: 430px;
+            margin: 0 auto;
+            background: white;
+            color: #333;
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .header h1 {
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+        
+        .team-stats {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 15px;
+            margin-top: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.4em;
+            font-weight: bold;
+            display: block;
+        }
+        
+        .stat-label {
+            font-size: 0.8em;
+            opacity: 0.9;
+        }
+        
+        .test-controls {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            margin: 20px;
+            padding: 20px;
+            border-radius: 15px;
+            text-align: center;
+        }
+        
+        .test-controls h3 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+        
+        .location-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 0.9em;
+        }
+        
+        .test-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .status-section {
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .gps-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 12px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .gps-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #f44336;
+            animation: pulse 2s infinite;
+        }
+        
+        .gps-indicator.active {
+            background: #4caf50;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .map-container {
+            height: 350px;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .checkpoint-section {
+            padding: 0 20px 20px;
+        }
+        
+        .checkpoint {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .checkpoint.next {
+            border-color: #4caf50;
+            background: linear-gradient(135deg, #fff 0%, #e8f5e8 100%);
+        }
+        
+        .checkpoint.available {
+            border-color: #ff9800;
+            background: linear-gradient(135deg, #fff 0%, #fff3e0 100%);
+            cursor: pointer;
+            transform: scale(1.02);
+            animation: glow 2s infinite;
+        }
+        
+        @keyframes glow {
+            0% { box-shadow: 0 5px 15px rgba(255, 152, 0, 0.3); }
+            50% { box-shadow: 0 5px 25px rgba(255, 152, 0, 0.6); }
+            100% { box-shadow: 0 5px 15px rgba(255, 152, 0, 0.3); }
+        }
+        
+        .checkpoint.completed {
+            border-color: #2196f3;
+            background: linear-gradient(135deg, #fff 0%, #e3f2fd 100%);
+        }
+        
+        .checkpoint.locked {
+            opacity: 0.6;
+            background: #f5f5f5;
+        }
+        
+        .checkpoint-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .checkpoint-name {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #4caf50;
+        }
+        
+        .checkpoint-status {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            color: white;
+        }
+        
+        .next .checkpoint-status {
+            background: #4caf50;
+        }
+        
+        .available .checkpoint-status {
+            background: #ff9800;
+            animation: bounce 2s infinite;
+        }
+        
+        .completed .checkpoint-status {
+            background: #2196f3;
+        }
+        
+        .locked .checkpoint-status {
+            background: #bdbdbd;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+        
+        .checkpoint-details {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .checkpoint-distance {
+            color: #4caf50;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+        
+        .btn-primary {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .btn-warning {
+            background: #ff9800;
+            color: white;
+        }
+        
+        .btn-info {
+            background: #2196f3;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #666;
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .challenge-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        
+        .challenge-content {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .challenge-title {
+            color: #4caf50;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+        }
+        
+        .floating-notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #4caf50;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 1001;
+            display: none;
+            animation: slideIn 0.5s ease;
+        }
+        
+        .floating-notification.error {
+            background: #f44336;
+        }
+        
+        .floating-notification.warning {
+            background: #ff9800;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(-50%) translateY(-100%); }
+            to { transform: translateX(-50%) translateY(0); }
+        }
+        
+        .progress-bar {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            height: 8px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            background: white;
+            height: 100%;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+        
+        .firebase-status {
+            background: #e8f5e8;
+            border-left: 4px solid #4caf50;
+            padding: 15px;
+            margin: 20px;
+            border-radius: 8px;
+        }
+        
+        .firebase-status.error {
+            background: #ffebee;
+            border-left-color: #f44336;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 VERSÃO TESTE</h1>
+            <p>Sistema de Raid • Testes Locais</p>
+            
+            <div class="team-stats">
+                <div class="stat">
+                    <span class="stat-value" id="teamScore">0</span>
+                    <span class="stat-label">Pontos</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="teamStatus">Teste</span>
+                    <span class="stat-label">Status</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="completedCPs">0/3</span>
+                    <span class="stat-label">CPs</span>
+                </div>
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+        
+        <div class="test-controls">
+            <h3>🎮 Controlos de Teste</h3>
+            <div class="location-info" id="locationInfo">
+                Aguardando GPS...
+            </div>
+            <div class="test-buttons">
+                <button class="btn btn-warning" onclick="createTestCheckpoints()">
+                    📍 Criar CPs Aqui
+                </button>
+                <button class="btn btn-info" onclick="simulateMovement()">
+                    🚶 Simular Movimento
+                </button>
+                <button class="btn btn-primary" onclick="resetTest()">
+                    🔄 Reset Teste
+                </button>
+                <button class="btn btn-secondary" onclick="toggleDebug()">
+                    🔧 Debug Mode
+                </button>
+            </div>
+        </div>
+        
+        <div class="firebase-status" id="firebaseStatus">
+            🔄 Conectando ao Firebase...
+        </div>
+        
+        <div class="status-section">
+            <div class="gps-status">
+                <div class="gps-indicator" id="gpsIndicator"></div>
+                <div>
+                    <strong id="gpsStatus">A ativar GPS...</strong>
+                    <div id="gpsCoords" style="font-size: 0.8em; color: #666;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="map-container">
+            <div id="map" style="height: 100%;"></div>
+        </div>
+        
+        <div class="checkpoint-section">
+            <h3 style="text-align: center; color: #4caf50; margin-bottom: 20px;">
+                📍 Checkpoints de Teste
+            </h3>
+            <div id="checkpointList"></div>
+        </div>
+    </div>
+    
+    <!-- Challenge Modal -->
+    <div class="challenge-modal" id="challengeModal">
+        <div class="challenge-content" id="challengeContent">
+            <!-- Content dinamicamente injetado -->
+        </div>
+    </div>
+    
+    <!-- Notification -->
+    <div class="floating-notification" id="floatingNotification"></div>
+    
+    <!-- Firebase and Leaflet -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module">
+        // Configuração Firebase
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, onValue, set, push, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyDMQNN57N8v2WJaIL_sbQEptMhVD0_96M4",
+            authDomain: "raid-pioneiros-2025.firebaseapp.com",
+            databaseURL: "https://raid-pioneiros-2025-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "raid-pioneiros-2025",
+            storageBucket: "raid-pioneiros-2025.firebasestorage.app",
+            messagingSenderId: "364137677559",
+            appId: "1:364137677559:web:2be68cd6dcd6ccbf5ac9f2"
+        };
+        
+        // Estado do teste
+        let db = null;
+        let isFirebaseEnabled = false;
+        let map = null;
+        let watchId = null;
+        let userPosition = null;
+        let userMarker = null;
+        let checkpointMarkers = [];
+        let debugMode = false;
+        
+        const testData = {
+            id: 'TEST',
+            name: 'Teste Local',
+            color: '#4caf50',
+            score: 0,
+            completedCPs: [],
+            currentCP: 0
+        };
+        
+        // Checkpoints serão criados dinamicamente baseados na localização
+        let checkpoints = [];
+        
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            initFirebase();
+            initMap();
+            initGPS();
+            updateUI();
+        });
+        
+        function initFirebase() {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getDatabase(app);
+                isFirebaseEnabled = true;
+                
+                document.getElementById('firebaseStatus').innerHTML = '✅ Firebase conectado com sucesso!';
+                document.getElementById('firebaseStatus').classList.remove('error');
+                
+                // Sync teste data
+                const testRef = ref(db, 'raid/test');
+                set(testRef, {
+                    active: true,
+                    timestamp: serverTimestamp(),
+                    data: testData
+                });
+                
+                showNotification("🔥 Sistema em tempo real ativo!", 'success');
+            } catch (error) {
+                console.error("Erro Firebase:", error);
+                document.getElementById('firebaseStatus').innerHTML = '❌ Firebase offline - modo local ativo';
+                document.getElementById('firebaseStatus').classList.add('error');
+                showNotification("Modo offline ativado", 'warning');
+            }
+        }
+        
+        function initMap() {
+            // Mapa centrado em localização genérica inicialmente
+            map = L.map('map').setView([39.4699, -8.5450], 13);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+        }
+        
+        function initGPS() {
+            if (!navigator.geolocation) {
+                showNotification('GPS não disponível neste dispositivo', 'error');
+                return;
+            }
+            
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 30000
+            };
+            
+            showNotification("🛰️ A obter localização GPS...", 'info');
+            
+            watchId = navigator.geolocation.watchPosition(
+                updatePosition,
+                handleGPSError,
+                options
+            );
+        }
+        
+        function updatePosition(position) {
+            userPosition = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+                timestamp: Date.now()
+            };
+            
+            // Atualizar UI
+            document.getElementById('gpsIndicator').classList.add('active');
+            document.getElementById('gpsStatus').textContent = 'GPS Ativo';
+            document.getElementById('gpsCoords').textContent = 
+                `${userPosition.lat.toFixed(6)}, ${userPosition.lng.toFixed(6)} (±${Math.round(userPosition.accuracy)}m)`;
+            
+            // Atualizar info de localização
+            document.getElementById('locationInfo').innerHTML = `
+                <strong>📍 Tua Localização:</strong><br>
+                Lat: ${userPosition.lat.toFixed(6)}<br>
+                Lng: ${userPosition.lng.toFixed(6)}<br>
+                Precisão: ±${Math.round(userPosition.accuracy)}m
+            `;
+            
+            // Centrar mapa na localização
+            map.setView([userPosition.lat, userPosition.lng], 16);
+            
+            // Atualizar marcador do utilizador
+            if (userMarker) {
+                map.removeLayer(userMarker);
+            }
+            
+            userMarker = L.marker([userPosition.lat, userPosition.lng], {
+                icon: L.divIcon({
+                    className: 'user-marker',
+                    html: '🧪',
+                    iconSize: [25, 25]
+                })
+            }).addTo(map);
+            
+            userMarker.bindPopup('🧪 Tu estás aqui!<br>Teste do sistema');
+            
+            // Se ainda não há checkpoints, sugerir criação
+            if (checkpoints.length === 0) {
+                showNotification("📍 Clica 'Criar CPs Aqui' para gerar checkpoints de teste!", 'info');
+            } else {
+                checkNearbyCheckpoints();
+            }
+            
+            // Sync com Firebase
+            if (isFirebaseEnabled) {
+                const positionRef = ref(db, 'raid/test/position');
+                set(positionRef, {
+                    lat: userPosition.lat,
+                    lng: userPosition.lng,
+                    accuracy: userPosition.accuracy,
+                    timestamp: serverTimestamp()
+                });
+            }
+        }
+        
+        function handleGPSError(error) {
+            console.error('Erro GPS:', error);
+            let errorMsg = 'Erro GPS';
+            
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMsg = "Permissão GPS negada";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMsg = "GPS indisponível";
+                    break;
+                case error.TIMEOUT:
+                    errorMsg = "Timeout GPS";
+                    break;
+            }
+            
+            document.getElementById('gpsStatus').textContent = errorMsg;
+            showNotification(errorMsg + ' - Permite localização!', 'error');
+        }
+        
+        // Criar checkpoints de teste baseados na localização atual
+        window.createTestCheckpoints = function() {
+            if (!userPosition) {
+                showNotification("❌ GPS necessário para criar checkpoints!", 'error');
+                return;
+            }
+            
+            // Limpar checkpoints existentes
+            checkpointMarkers.forEach(marker => map.removeLayer(marker));
+            checkpointMarkers = [];
+            
+            // Gerar 3 checkpoints num raio de 200m
+            const baseRadius = 0.002; // ~200m em graus
+            
+            checkpoints = [
+                {
+                    id: 'test1',
+                    name: 'CP1 - Teste Norte',
+                    description: 'Checkpoint de teste ao norte',
+                    lat: userPosition.lat + baseRadius,
+                    lng: userPosition.lng,
+                    radius: 50,
+                    points: 100,
+                    challengeType: 'photo',
+                    challenge: {
+                        title: '📸 Primeira Foto',
+                        description: 'Tira uma selfie para testar o sistema!',
+                        instruction: 'Sorri e diz "Teste!"'
+                    }
+                },
+                {
+                    id: 'test2', 
+                    name: 'CP2 - Teste Este',
+                    description: 'Checkpoint de teste ao este',
+                    lat: userPosition.lat,
+                    lng: userPosition.lng + baseRadius,
+                    radius: 50,
+                    points: 150,
+                    challengeType: 'quiz',
+                    challenge: {
+                        title: '🧠 Quiz Teste',
+                        description: 'Pergunta teste: Qual a capital de Portugal?',
+                        options: ['Porto', 'Lisboa', 'Braga', 'Faro'],
+                        correct: 1,
+                        explanation: 'Lisboa é a capital!'
+                    }
+                },
+                {
+                    id: 'test3',
+                    name: 'CP3 - Teste Sul',
+                    description: 'Checkpoint final de teste',
+                    lat: userPosition.lat - baseRadius,
+                    lng: userPosition.lng,
+                    radius: 50,
+                    points: 200,
+                    challengeType: 'final',
+                    challenge: {
+                        title: '🎉 Teste Completo!',
+                        description: 'Parabéns! Sistema testado com sucesso!',
+                        instruction: 'Foto comemorativa!'
+                    }
+                }
+            ];
+            
+            // Reset do progresso
+            testData.completedCPs = [];
+            testData.currentCP = 0;
+            testData.score = 0;
+            
+            // Adicionar marcadores ao mapa
+            checkpoints.forEach((cp, index) => {
+                let color = index === 0 ? '#4caf50' : '#bdbdbd';
+                
+                const marker = L.circleMarker([cp.lat, cp.lng], {
+                    radius: 20,
+                    fillColor: color,
+                    color: 'white',
+                    weight: 3,
+                    fillOpacity: 0.8
+                }).addTo(map);
+                
+                marker.bindPopup(`
+                    <b>${cp.name}</b><br>
+                    ${cp.description}<br>
+                    <strong>${cp.points} pontos</strong><br>
+                    <em>Raio: ${cp.radius}m</em>
+                `);
+                
+                checkpointMarkers.push(marker);
+                
+                // Mostrar círculo de detecção se debug mode
+                if (debugMode) {
+                    L.circle([cp.lat, cp.lng], {
+                        radius: cp.radius,
+                        fillColor: color,
+                        color: color,
+                        weight: 2,
+                        fillOpacity: 0.1
+                    }).addTo(map);
+                }
+            });
+            
+            renderCheckpoints();
+            updateUI();
+            
+            showNotification(`📍 ${checkpoints.length} checkpoints criados num raio de 200m!`, 'success');
+            
+            // Sync com Firebase
+            if (isFirebaseEnabled) {
+                const checkpointsRef = ref(db, 'raid/test/checkpoints');
+                set(checkpointsRef, checkpoints);
+            }
+        };
+        
+        // Simular movimento para o próximo checkpoint
+        window.simulateMovement = function() {
+            if (checkpoints.length === 0) {
+                showNotification("❌ Cria checkpoints primeiro!", 'error');
+                return;
+            }
+            
+            const nextCP = checkpoints[testData.currentCP];
+            if (!nextCP) {
+                showNotification("🏁 Todos os checkpoints completados!", 'info');
+                return;
+            }
+            
+            // "Mover" utilizador para o checkpoint
+            userPosition.lat = nextCP.lat;
+            userPosition.lng = nextCP.lng;
+            
+            // Atualizar mapa
+            map.setView([userPosition.lat, userPosition.lng], 18);
+            
+            if (userMarker) {
+                map.removeLayer(userMarker);
+            }
+            
+            userMarker = L.marker([userPosition.lat, userPosition.lng], {
+                icon: L.divIcon({
+                    className: 'user-marker',
+                    html: '🧪',
+                    iconSize: [25, 25]
+                })
+            }).addTo(map);
+            
+            // Atualizar coordenadas
+            document.getElementById('gpsCoords').textContent = 
+                `${userPosition.lat.toFixed(6)}, ${userPosition.lng.toFixed(6)} (SIMULADO)`;
+            
+            showNotification(`🚶 Movimento simulado para ${nextCP.name}!`, 'success');
+            
+            // Verificar proximidade
+            setTimeout(() => {
+                checkNearbyCheckpoints();
+            }, 1000);
+        };
+        
+        // Reset do teste
+        window.resetTest = function() {
+            testData.completedCPs = [];
+            testData.currentCP = 0;
+            testData.score = 0;
+            
+            checkpointMarkers.forEach((marker, index) => {
+                marker.setStyle({ 
+                    fillColor: index === 0 ? '#4caf50' : '#bdbdbd' 
+                });
+            });
+            
+            renderCheckpoints();
+            updateUI();
+            
+            showNotification("🔄 Teste reiniciado!", 'info');
+        };
+        
+        // Toggle debug mode
+        window.toggleDebug = function() {
+            debugMode = !debugMode;
+            showNotification(`🔧 Debug mode: ${debugMode ? 'ON' : 'OFF'}`, 'info');
+            
+            if (debugMode) {
+                console.log('Debug Info:', {
+                    userPosition,
+                    checkpoints,
+                    testData,
+                    firebase: isFirebaseEnabled
+                });
+            }
+        };
+        
+        function checkNearbyCheckpoints() {
+            if (!userPosition || checkpoints.length === 0) return;
+            
+            const currentCP = checkpoints[testData.currentCP];
+            if (!currentCP) return;
+            
+            const distance = calculateDistance(
+                userPosition.lat, userPosition.lng,
+                currentCP.lat, currentCP.lng
+            );
+            
+            if (debugMode) {
+                console.log(`Distância para ${currentCP.name}: ${Math.round(distance)}m (limite: ${currentCP.radius}m)`);
+            }
+            
+            if (distance <= currentCP.radius) {
+                unlockCheckpoint(currentCP.id);
+            }
+            
+            renderCheckpoints();
+        }
+        
+        function calculateDistance(lat1, lng1, lat2, lng2) {
+            const R = 6371000; // Raio da Terra em metros
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                     Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                     Math.sin(dLng/2) * Math.sin(dLng/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+        
+        function unlockCheckpoint(cpId) {
+            const cpElement = document.querySelector(`[data-cp="${cpId}"]`);
+            if (cpElement && !cpElement.classList.contains('available')) {
+                cpElement.classList.remove('next');
+                cpElement.classList.add('available');
+                
+                const cp = checkpoints.find(c => c.id === cpId);
+                showNotification(`🎯 ${cp.name} desbloqueado! Clica para abrir desafio!`, 'success');
+                
+                // Atualizar marcador
+                const cpIndex = checkpoints.findIndex(c => c.id === cpId);
+                if (checkpointMarkers[cpIndex]) {
+                    checkpointMarkers[cpIndex].setStyle({ fillColor: '#ff9800' });
+                }
+            }
+        }
+        
+        function renderCheckpoints() {
+            const container = document.getElementById('checkpointList');
+            container.innerHTML = '';
+            
+            checkpoints.forEach((cp, index) => {
+                const div = document.createElement('div');
+                div.className = 'checkpoint';
+                div.setAttribute('data-cp', cp.id);
+                
+                let status = 'locked';
+                let statusIcon = '🔒';
+                let distance = '';
+                
+                if (testData.completedCPs.includes(cp.id)) {
+                    status = 'completed';
+                    statusIcon = '✅';
+                } else if (index === testData.currentCP) {
+                    if (userPosition) {
+                        const dist = calculateDistance(userPosition.lat, userPosition.lng, cp.lat, cp.lng);
+                        distance = `${Math.round(dist)}m`;
+                        
+                        if (dist <= cp.radius) {
+                            status = 'available';
+                            statusIcon = '🎯';
+                            div.onclick = () => openChallenge(cp.id);
+                        } else {
+                            status = 'next';
+                            statusIcon = '📍';
+                        }
+                    } else {
+                        status = 'next';
+                        statusIcon = '📍';
+                    }
+                }
+                
+                div.className += ` ${status}`;
+                div.innerHTML = `
+                    <div class="checkpoint-header">
+                        <div class="checkpoint-name">${cp.name}</div>
+                        <div class="checkpoint-status">${statusIcon}</div>
+                    </div>
+                    <div class="checkpoint-details">${cp.description}</div>
+                    <div class="checkpoint-distance">
+                        ${cp.points} pontos ${distance}
+                    </div>
+                `;
+                
+                container.appendChild(div);
+            });
+        }
+        
+        function openChallenge(cpId) {
+            const cp = checkpoints.find(c => c.id === cpId);
+            if (!cp) return;
+            
+            const modal = document.getElementById('challengeModal');
+            const content = document.getElementById('challengeContent');
+            
+            let challengeHTML = `
+                <h2 class="challenge-title">${cp.challenge.title}</h2>
+                <p style="margin-bottom: 20px;">${cp.challenge.description}</p>
+            `;
+            
+            if (cp.challengeType === 'photo' || cp.challengeType === 'final') {
+                challengeHTML += `
+                    <div style="margin: 20px 0;">
+                        <button class="btn btn-info" onclick="fakePhoto()">
+                            📸 Simular Foto
+                        </button>
+                        <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                            ${cp.challenge.instruction}
+                        </p>
+                    </div>
+                `;
+            } else if (cp.challengeType === 'quiz') {
+                challengeHTML += `
+                    <div class="quiz-challenge">
+                        <h4 style="margin: 20px 0;">${cp.challenge.description}</h4>
+                        <div id="quizOptions">
+                            ${cp.challenge.options.map((option, index) => 
+                                `<button class="btn" style="width: 100%; margin: 5px 0; background: #f5f5f5; color: #333;" 
+                                        onclick="selectQuizOption(${index}, ${cp.challenge.correct})" data-index="${index}">
+                                    ${option}
+                                </button>`
+                            ).join('')}
+                        </div>
+                        <div id="quizResult" style="margin-top: 15px; display: none;"></div>
+                    </div>
+                `;
+            }
+            
+            challengeHTML += `
+                <div style="margin-top: 20px;">
+                    <button class="btn btn-primary" onclick="completeChallenge('${cpId}')">
+                        Completar (+${cp.points} pts)
+                    </button>
+                    <button class="btn btn-secondary" onclick="closeChallenge()">
+                        Fechar
+                    </button>
+                </div>
+            `;
+            
+            content.innerHTML = challengeHTML;
+            modal.style.display = 'flex';
+        }
+        
+        window.fakePhoto = function() {
+            showNotification("📸 Foto simulada tirada!", 'success');
+        };
+        
+        window.selectQuizOption = function(selectedIndex, correctIndex) {
+            const buttons = document.querySelectorAll('#quizOptions .btn');
+            buttons.forEach((btn, index) => {
+                btn.style.background = index === correctIndex ? '#4caf50' : 
+                                     index === selectedIndex ? '#f44336' : '#f5f5f5';
+                btn.style.color = index === correctIndex || index === selectedIndex ? 'white' : '#333';
+            });
+            
+            const result = document.getElementById('quizResult');
+            result.style.display = 'block';
+            result.innerHTML = selectedIndex === correctIndex ? 
+                '✅ Correto! Muito bem!' : '❌ Incorreto, mas ganhas pontos!';
+        };
+        
+        window.completeChallenge = function(cpId) {
+            const cp = checkpoints.find(c => c.id === cpId);
+            if (!cp) return;
+            
+            // Adicionar aos completados
+            testData.completedCPs.push(cpId);
+            testData.score += cp.points;
+            testData.currentCP++;
+            
+            // Atualizar marcador
+            const cpIndex = checkpoints.findIndex(c => c.id === cpId);
+            if (checkpointMarkers[cpIndex]) {
+                checkpointMarkers[cpIndex].setStyle({ fillColor: '#2196f3' });
+            }
+            
+            // Próximo marcador
+            if (testData.currentCP < checkpoints.length && checkpointMarkers[testData.currentCP]) {
+                checkpointMarkers[testData.currentCP].setStyle({ fillColor: '#4caf50' });
+            }
+            
+            showNotification(`🎉 +${cp.points} pontos! ${cp.name} completado!`, 'success');
+            
+            if (testData.currentCP >= checkpoints.length) {
+                setTimeout(() => {
+                    showNotification("🏆 Teste completo! Sistema funcionou perfeitamente!", 'success');
+                }, 1000);
+            }
+            
+            // Sync com Firebase
+            if (isFirebaseEnabled) {
+                const testRef = ref(db, 'raid/test/data');
+                set(testRef, testData);
+            }
+            
+            updateUI();
+            renderCheckpoints();
+            closeChallenge();
+        };
+        
+        window.closeChallenge = function() {
+            document.getElementById('challengeModal').style.display = 'none';
+        };
+        
+        function updateUI() {
+            document.getElementById('teamScore').textContent = testData.score;
+            document.getElementById('completedCPs').textContent = `${testData.completedCPs.length}/${checkpoints.length}`;
+            
+            const progress = checkpoints.length > 0 ? (testData.completedCPs.length / checkpoints.length) * 100 : 0;
+            document.getElementById('progressFill').style.width = `${progress}%`;
+            
+            if (testData.completedCPs.length === checkpoints.length && checkpoints.length > 0) {
+                document.getElementById('teamStatus').textContent = 'Completo!';
+            } else if (checkpoints.length > 0) {
+                document.getElementById('teamStatus').textContent = 'Ativo';
+            } else {
+                document.getElementById('teamStatus').textContent = 'Aguarda';
+            }
+        }
+        
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('floatingNotification');
+            notification.textContent = message;
+            notification.className = `floating-notification ${type}`;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 4000);
+        }
+        
+        // Cleanup
+        window.addEventListener('beforeunload', function() {
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+            }
+        });
+    </script>
+</body>
+</html>
