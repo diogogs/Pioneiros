@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔴 Equipa A - Percurso Costa</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        .container {
+            max-width: 430px;
+            margin: 0 auto;
+            background: white;
+            color: #333;
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .header h1 {
+            font-size: 1.5em;
+            margin-bottom: 5px;
+        }
+        
+        .team-stats {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 15px;
+            margin-top: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .stat {
+            text-align: center;
+        }
+        
+        .stat-value {
+            font-size: 1.4em;
+            font-weight: bold;
+            display: block;
+        }
+        
+        .stat-label {
+            font-size: 0.8em;
+            opacity: 0.9;
+        }
+        
+        .notification-bar {
+            background: #ff5722;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            display: none;
+            animation: slideDown 0.5s ease;
+        }
+        
+        @keyframes slideDown {
+            from { transform: translateY(-100%); }
+            to { transform: translateY(0); }
+        }
+        
+        .status-section {
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .gps-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 12px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .gps-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #f44336;
+            animation: pulse 2s infinite;
+        }
+        
+        .gps-indicator.active {
+            background: #4caf50;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .map-container {
+            height: 300px;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .checkpoint-section {
+            padding: 0 20px 20px;
+        }
+        
+        .checkpoint {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .checkpoint.next {
+            border-color: #f44336;
+            background: linear-gradient(135deg, #fff 0%, #ffebee 100%);
+        }
+        
+        .checkpoint.available {
+            border-color: #4caf50;
+            background: linear-gradient(135deg, #fff 0%, #e8f5e8 100%);
+            cursor: pointer;
+            transform: scale(1.02);
+        }
+        
+        .checkpoint.completed {
+            border-color: #2196f3;
+            background: linear-gradient(135deg, #fff 0%, #e3f2fd 100%);
+        }
+        
+        .checkpoint.locked {
+            opacity: 0.6;
+            background: #f5f5f5;
+        }
+        
+        .checkpoint-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .checkpoint-name {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #f44336;
+        }
+        
+        .checkpoint-status {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+            color: white;
+        }
+        
+        .next .checkpoint-status {
+            background: #f44336;
+        }
+        
+        .available .checkpoint-status {
+            background: #4caf50;
+            animation: bounce 2s infinite;
+        }
+        
+        .completed .checkpoint-status {
+            background: #2196f3;
+        }
+        
+        .locked .checkpoint-status {
+            background: #bdbdbd;
+        }
+        
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+        
+        .checkpoint-details {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        
+        .checkpoint-distance {
+            color: #f44336;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .challenge-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        
+        .challenge-content {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .challenge-title {
+            color: #f44336;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 5px;
+        }
+        
+        .btn-primary {
+            background: #f44336;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #666;
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .rival-teams {
+            background: white;
+            margin: 20px;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .rival-teams h3 {
+            text-align: center;
+            color: #f44336;
+            margin-bottom: 15px;
+        }
+        
+        .rival-team {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 8px 0;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+        
+        .rival-team.team-b {
+            border-left: 4px solid #2196f3;
+        }
+        
+        .rival-team.team-c {
+            border-left: 4px solid #ff9800;
+        }
+        
+        .photo-challenge {
+            margin: 20px 0;
+        }
+        
+        .photo-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px dashed #ccc;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .photo-input:hover {
+            border-color: #f44336;
+            background: rgba(244, 67, 54, 0.1);
+        }
+        
+        .floating-notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #4caf50;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 1001;
+            display: none;
+            animation: slideIn 0.5s ease;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(-50%) translateY(-100%); }
+            to { transform: translateX(-50%) translateY(0); }
+        }
+        
+        .progress-bar {
+            background: rgba(255,255,255,0.2);
+            border-radius: 10px;
+            height: 8px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            background: white;
+            height: 100%;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔴 EQUIPA A</h1>
+            <p>Percurso Costa • Santiago → Monte do Paio</p>
+            
+            <div class="team-stats">
+                <div class="stat">
+                    <span class="stat-value" id="teamScore">0</span>
+                    <span class="stat-label">Pontos</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="teamPosition">-</span>
+                    <span class="stat-label">Posição</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="completedCPs">0/5</span>
+                    <span class="stat-label">CPs</span>
+                </div>
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill"></div>
+            </div>
+        </div>
+        
+        <div class="notification-bar" id="notificationBar"></div>
+        
+        <div class="status-section">
+            <div class="gps-status">
+                <div class="gps-indicator" id="gpsIndicator"></div>
+                <div>
+                    <strong id="gpsStatus">A ativar GPS...</strong>
+                    <div id="gpsCoords" style="font-size: 0.8em; color: #666;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="map-container">
+            <div id="map" style="height: 100%;"></div>
+        </div>
+        
+        <div class="checkpoint-section">
+            <h3 style="text-align: center; color: #f44336; margin-bottom: 20px;">
+                📍 Percurso Costa
+            </h3>
+            <div id="checkpointList"></div>
+        </div>
+        
+        <div class="rival-teams">
+            <h3>👀 Equipas Rivais</h3>
+            <div class="rival-team team-b">
+                <span>🔵 Equipa B</span>
+                <span id="teamBDistance">Calculando...</span>
+            </div>
+            <div class="rival-team team-c">
+                <span>🟠 Equipa C</span>
+                <span id="teamCDistance">Calculando...</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Challenge Modal -->
+    <div class="challenge-modal" id="challengeModal">
+        <div class="challenge-content" id="challengeContent">
+            <!-- Content dinamicamente injetado -->
+        </div>
+    </div>
+    
+    <!-- Notification -->
+    <div class="floating-notification" id="floatingNotification"></div>
+    
+    <!-- Firebase and Leaflet -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module">
+        // CONFIGURAÇÃO FIREBASE - SUBSTITUIR COM OS DADOS REAIS
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, onValue, set, push, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        
+        // Configuração Firebase Real
+        const firebaseConfig = {
+            apiKey: "AIzaSyDMQNN57N8v2WJaIL_sbQEptMhVD0_96M4",
+            authDomain: "raid-pioneiros-2025.firebaseapp.com",
+            databaseURL: "https://raid-pioneiros-2025-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "raid-pioneiros-2025",
+            storageBucket: "raid-pioneiros-2025.firebasestorage.app",
+            messagingSenderId: "364137677559",
+            appId: "1:364137677559:web:2be68cd6dcd6ccbf5ac9f2"
+        };
+        
+        // Inicializar Firebase
+        let db = null;
+        let isFirebaseEnabled = false;
+        
+        try {
+            const app = initializeApp(firebaseConfig);
+            db = getDatabase(app);
+            isFirebaseEnabled = true;
+            console.log("🔥 Firebase conectado com sucesso!");
+            showNotification("Conectado ao sistema em tempo real! 🔥", 'success');
+        } catch (error) {
+            console.error("Erro Firebase:", error);
+            showNotification("Modo offline ativado", 'warning');
+        }
+        
+        // Estado da equipa
+        const teamData = {
+            id: 'A',
+            name: 'Equipa Vermelha',
+            color: '#f44336',
+            score: 0,
+            position: null,
+            completedCPs: [],
+            currentCP: 'start'
+        };
+        
+        // Checkpoints específicos da Equipa A (Percurso Costa)
+        const checkpoints = [
+            {
+                id: 'start',
+                name: 'Partida - Igreja Santiago',
+                description: 'Ponto de partida oficial',
+                lat: 38.0167,
+                lng: -8.6833,
+                radius: 50,
+                points: 0,
+                challengeType: 'briefing',
+                challenge: {
+                    title: '🚩 Partida Oficial',
+                    description: 'Bem-vindos ao Raid Tecnológico! Estão prontos para a aventura?',
+                    instruction: 'Confiram o equipamento e iniciem a vossa jornada pela costa!'
+                }
+            },
+            {
+                id: 'cp1',
+                name: 'CP1 - Centro Histórico',
+                description: 'Explorar o património local',
+                lat: 38.0156,
+                lng: -8.6842,
+                radius: 30,
+                points: 150,
+                challengeType: 'photo',
+                challenge: {
+                    title: '📸 Património Local',
+                    description: 'Fotografem a equipa em frente a um monumento histórico de Santiago do Cacém',
+                    instruction: 'Todos visíveis, com pose criativa!'
+                }
+            },
+            {
+                id: 'cp2',
+                name: 'CP2 - Praia de Santo André',
+                description: 'Desafio na costa atlântica',
+                lat: 37.9944,
+                lng: -8.7889,
+                radius: 40,
+                points: 200,
+                challengeType: 'activity',
+                challenge: {
+                    title: '🌊 Desafio Costeiro',
+                    description: 'Construam uma escultura de areia que represente o vosso grupo escutista',
+                    instruction: 'Sejam criativos e fotografem o resultado!'
+                }
+            },
+            {
+                id: 'cp3',
+                name: 'CP3 - Lagoa Norte',
+                description: 'Observação da natureza',
+                lat: 37.9700,
+                lng: -8.7600,
+                radius: 35,
+                points: 175,
+                challengeType: 'quiz',
+                challenge: {
+                    title: '🦆 Quiz Natureza',
+                    description: 'Que tipo de aves aquáticas podem encontrar na Lagoa de Santo André?',
+                    options: ['Apenas gaivotas', 'Flamingos e patos', 'Águias e corvos', 'Papagaios tropicais'],
+                    correct: 1,
+                    explanation: 'A lagoa é habitat para diversas aves aquáticas, incluindo flamingos!'
+                }
+            },
+            {
+                id: 'cp4',
+                name: 'CP4 - Reserva Natural',
+                description: 'Coração da biodiversidade',
+                lat: 37.9500,
+                lng: -8.7550,
+                radius: 40,
+                points: 225,
+                challengeType: 'nature',
+                challenge: {
+                    title: '🌿 Caça ao Tesouro Natural',
+                    description: 'Encontrem e fotografem: 1 planta aromática, 1 rastro animal, 1 vista panorâmica',
+                    instruction: 'Três fotos diferentes, cada uma com legenda!'
+                }
+            },
+            {
+                id: 'finish',
+                name: 'Chegada - Monte do Paio',
+                description: 'Meta final do percurso!',
+                lat: 38.0658,
+                lng: -8.7734,
+                radius: 50,
+                points: 300,
+                challengeType: 'final',
+                challenge: {
+                    title: '🏕️ Chegada Triunfal!',
+                    description: 'Parabéns! Completaram o Percurso Costa!',
+                    instruction: 'Foto de equipa comemorativa no Campo Técnico!'
+                }
+            }
+        ];
+        
+        // Variáveis globais
+        let userPosition = null;
+        let map = null;
+        let watchId = null;
+        let userMarker = null;
+        let checkpointMarkers = [];
+        
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            initMap();
+            initGPS();
+            loadLocalData();
+            renderCheckpoints();
+            updateUI();
+            
+            if (isFirebaseEnabled) {
+                syncWithFirebase();
+                listenForNotifications();
+            }
+        });
+        
+        // Mapa
+        function initMap() {
+            // Centro inicial em Santiago do Cacém
+            map = L.map('map').setView([38.0167, -8.6833], 12);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            // Adicionar checkpoints ao mapa
+            checkpoints.forEach((cp, index) => {
+                let color = '#bdbdbd'; // Locked
+                if (index === 0) color = '#f44336'; // Current
+                
+                const marker = L.circleMarker([cp.lat, cp.lng], {
+                    radius: 15,
+                    fillColor: color,
+                    color: 'white',
+                    weight: 3,
+                    fillOpacity: 0.8
+                }).addTo(map);
+                
+                marker.bindPopup(`
+                    <b>${cp.name}</b><br>
+                    ${cp.description}<br>
+                    <strong>${cp.points} pontos</strong>
+                `);
+                
+                checkpointMarkers.push(marker);
+            });
+            
+            // Linha do percurso
+            const routeCoords = checkpoints.map(cp => [cp.lat, cp.lng]);
+            L.polyline(routeCoords, {
+                color: '#f44336',
+                weight: 4,
+                opacity: 0.7,
+                dashArray: '10, 5'
+            }).addTo(map);
+        }
+        
+        // GPS
+        function initGPS() {
+            if (!navigator.geolocation) {
+                showNotification('GPS não disponível', 'error');
+                return;
+            }
+            
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 30000
+            };
+            
+            watchId = navigator.geolocation.watchPosition(
+                updatePosition,
+                handleGPSError,
+                options
+            );
+        }
+        
+        function updatePosition(position) {
+            userPosition = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+                timestamp: Date.now()
+            };
+            
+            // Atualizar UI
+            document.getElementById('gpsIndicator').classList.add('active');
+            document.getElementById('gpsStatus').textContent = 'GPS Ativo';
+            document.getElementById('gpsCoords').textContent = 
+                `${userPosition.lat.toFixed(4)}, ${userPosition.lng.toFixed(4)}`;
+            
+            // Atualizar mapa
+            if (userMarker) {
+                map.removeLayer(userMarker);
+            }
+            
+            userMarker = L.marker([userPosition.lat, userPosition.lng], {
+                icon: L.divIcon({
+                    className: 'user-marker',
+                    html: '🔴',
+                    iconSize: [20, 20]
+                })
+            }).addTo(map);
+            
+            // Verificar checkpoints próximos
+            checkNearbyCheckpoints();
+            
+            // Sync com Firebase
+            if (isFirebaseEnabled) {
+                updateTeamPosition();
+            }
+            
+            // Salvar localmente
+            saveLocalData();
+        }
+        
+        function handleGPSError(error) {
+            console.error('Erro GPS:', error);
+            document.getElementById('gpsStatus').textContent = 'Erro GPS';
+            showNotification('Erro ao obter localização', 'error');
+        }
+        
+        // Verificar proximidade aos checkpoints
+        function checkNearbyCheckpoints() {
+            if (!userPosition) return;
+            
+            checkpoints.forEach((cp, index) => {
+                const distance = calculateDistance(
+                    userPosition.lat, userPosition.lng,
+                    cp.lat, cp.lng
+                );
+                
+                // Verificar se está próximo do checkpoint atual
+                if (distance <= cp.radius && teamData.currentCP === cp.id) {
+                    unlockCheckpoint(cp.id);
+                }
+            });
+            
+            renderCheckpoints();
+        }
+        
+        // Calcular distância
+        function calculateDistance(lat1, lng1, lat2, lng2) {
+            const R = 6371000;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                     Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                     Math.sin(dLng/2) * Math.sin(dLng/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+        
+        // Unlock checkpoint
+        function unlockCheckpoint(cpId) {
+            const cpElement = document.querySelector(`[data-cp="${cpId}"]`);
+            if (cpElement && !cpElement.classList.contains('available')) {
+                cpElement.classList.remove('next');
+                cpElement.classList.add('available');
+                
+                showNotification(`🎯 ${checkpoints.find(cp => cp.id === cpId).name} desbloqueado!`, 'success');
+                
+                // Animar marcador no mapa
+                const cpIndex = checkpoints.findIndex(cp => cp.id === cpId);
+                if (checkpointMarkers[cpIndex]) {
+                    checkpointMarkers[cpIndex].setStyle({ fillColor: '#4caf50' });
+                }
+            }
+        }
+        
+        // Renderizar checkpoints
+        function renderCheckpoints() {
+            const container = document.getElementById('checkpointList');
+            container.innerHTML = '';
+            
+            checkpoints.forEach((cp, index) => {
+                const div = document.createElement('div');
+                div.className = 'checkpoint';
+                div.setAttribute('data-cp', cp.id);
+                
+                let status = 'locked';
+                let statusIcon = '🔒';
+                let distance = '';
+                
+                if (teamData.completedCPs.includes(cp.id)) {
+                    status = 'completed';
+                    statusIcon = '✅';
+                } else if (teamData.currentCP === cp.id) {
+                    if (userPosition) {
+                        const dist = calculateDistance(userPosition.lat, userPosition.lng, cp.lat, cp.lng);
+                        distance = `${Math.round(dist)}m`;
+                        
+                        if (dist <= cp.radius) {
+                            status = 'available';
+                            statusIcon = '🎯';
+                            div.onclick = () => openChallenge(cp.id);
+                        } else {
+                            status = 'next';
+                            statusIcon = '📍';
+                        }
+                    } else {
+                        status = 'next';
+                        statusIcon = '📍';
+                    }
+                }
+                
+                div.className += ` ${status}`;
+                div.innerHTML = `
+                    <div class="checkpoint-header">
+                        <div class="checkpoint-name">${cp.name}</div>
+                        <div class="checkpoint-status">${statusIcon}</div>
+                    </div>
+                    <div class="checkpoint-details">${cp.description}</div>
+                    <div class="checkpoint-distance">
+                        ${cp.points} pontos ${distance}
+                    </div>
+                `;
+                
+                container.appendChild(div);
+            });
+        }
+        
+        // Abrir desafio
+        function openChallenge(cpId) {
+            const cp = checkpoints.find(c => c.id === cpId);
+            if (!cp) return;
+            
+            const modal = document.getElementById('challengeModal');
+            const content = document.getElementById('challengeContent');
+            
+            let challengeHTML = `
+                <h2 class="challenge-title">${cp.challenge.title}</h2>
+                <p style="margin-bottom: 20px;">${cp.challenge.description}</p>
+            `;
+            
+            if (cp.challengeType === 'photo' || cp.challengeType === 'activity' || cp.challengeType === 'nature') {
+                challengeHTML += `
+                    <div class="photo-challenge">
+                        <input type="file" id="photoInput" accept="image/*" capture="camera" style="display: none;">
+                        <div class="photo-input" onclick="document.getElementById('photoInput').click()">
+                            📸 Tirar Foto
+                        </div>
+                        <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                            ${cp.challenge.instruction}
+                        </p>
+                    </div>
+                `;
+            } else if (cp.challengeType === 'quiz') {
+                challengeHTML += `
+                    <div class="quiz-challenge">
+                        <h4 style="margin: 20px 0;">${cp.challenge.description}</h4>
+                        <div id="quizOptions">
+                            ${cp.challenge.options.map((option, index) => 
+                                `<button class="btn" style="width: 100%; margin: 5px 0; background: #f5f5f5; color: #333;" 
+                                        onclick="selectQuizOption(${index}, ${cp.challenge.correct})" data-index="${index}">
+                                    ${option}
+                                </button>`
+                            ).join('')}
+                        </div>
+                        <div id="quizResult" style="margin-top: 15px; display: none;"></div>
+                    </div>
+                `;
+            }
+            
+            challengeHTML += `
+                <div style="margin-top: 20px;">
+                    <button class="btn btn-primary" onclick="completeChallenge('${cpId}')">
+                        Completar (+${cp.points} pts)
+                    </button>
+                    <button class="btn btn-secondary" onclick="closeChallenge()">
+                        Fechar
+                    </button>
+                </div>
+            `;
+            
+            content.innerHTML = challengeHTML;
+            modal.style.display = 'flex';
+        }
+        
+        // Quiz
+        window.selectQuizOption = function(selectedIndex, correctIndex) {
+            const buttons = document.querySelectorAll('#quizOptions .btn');
+            buttons.forEach((btn, index) => {
+                btn.style.background = index === correctIndex ? '#4caf50' : 
+                                     index === selectedIndex ? '#f44336' : '#f5f5f5';
+                btn.style.color = index === correctIndex || index === selectedIndex ? 'white' : '#333';
+            });
+            
+            const result = document.getElementById('quizResult');
+            result.style.display = 'block';
+            result.innerHTML = selectedIndex === correctIndex ? 
+                '✅ Correto! Bem feito!' : '❌ Incorreto, mas ganham pontos pela tentativa!';
+        };
+        
+        // Completar desafio
+        window.completeChallenge = function(cpId) {
+            const cp = checkpoints.find(c => c.id === cpId);
+            if (!cp) return;
+            
+            // Adicionar aos completados
+            teamData.completedCPs.push(cpId);
+            teamData.score += cp.points;
+            
+            // Avançar para próximo checkpoint
+            const currentIndex = checkpoints.findIndex(c => c.id === cpId);
+            if (currentIndex < checkpoints.length - 1) {
+                teamData.currentCP = checkpoints[currentIndex + 1].id;
+            }
+            
+            // Atualizar marcador no mapa
+            if (checkpointMarkers[currentIndex]) {
+                checkpointMarkers[currentIndex].setStyle({ fillColor: '#2196f3' });
+            }
+            
+            // Próximo marcador
+            if (currentIndex < checkpoints.length - 1 && checkpointMarkers[currentIndex + 1]) {
+                checkpointMarkers[currentIndex + 1].setStyle({ fillColor: '#f44336' });
+            }
+            
+            showNotification(`🎉 +${cp.points} pontos! ${cp.name} completado!`, 'success');
+            
+            // Sync e save
+            if (isFirebaseEnabled) {
+                syncWithFirebase();
+            }
+            saveLocalData();
+            updateUI();
+            renderCheckpoints();
+            closeChallenge();
+        };
+        
+        // Fechar modal
+        window.closeChallenge = function() {
+            document.getElementById('challengeModal').style.display = 'none';
+        };
+        
+        // UI Updates
+        function updateUI() {
+            document.getElementById('teamScore').textContent = teamData.score;
+            document.getElementById('completedCPs').textContent = `${teamData.completedCPs.length}/5`;
+            
+            const progress = (teamData.completedCPs.length / checkpoints.length) * 100;
+            document.getElementById('progressFill').style.width = `${progress}%`;
+        }
+        
+        // Notificações
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('floatingNotification');
+            notification.textContent = message;
+            notification.className = `floating-notification ${type}`;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 4000);
+        }
+        
+        // Firebase sync (placeholder - será ativado quando configurado)
+        function syncWithFirebase() {
+            if (!isFirebaseEnabled || !db) return;
+            
+            // Sync team data
+            const teamRef = ref(db, `raid/teams/${teamData.id}`);
+            set(teamRef, {
+                ...teamData,
+                lastUpdate: serverTimestamp()
+            });
+        }
+        
+        function updateTeamPosition() {
+            if (!isFirebaseEnabled || !db || !userPosition) return;
+            
+            const positionRef = ref(db, `raid/teams/${teamData.id}/position`);
+            set(positionRef, {
+                lat: userPosition.lat,
+                lng: userPosition.lng,
+                timestamp: serverTimestamp()
+            });
+        }
+        
+        function listenForNotifications() {
+            if (!isFirebaseEnabled || !db) return;
+            
+            // Global notifications
+            const globalRef = ref(db, 'raid/notifications/global');
+            onValue(globalRef, (snapshot) => {
+                // Handle notifications
+            });
+            
+            // Team specific notifications
+            const teamRef = ref(db, `raid/notifications/team${teamData.id}`);
+            onValue(teamRef, (snapshot) => {
+                // Handle team notifications
+            });
+        }
+        
+        // Local storage
+        function saveLocalData() {
+            localStorage.setItem('teamA_data', JSON.stringify({
+                ...teamData,
+                userPosition,
+                timestamp: Date.now()
+            }));
+        }
+        
+        function loadLocalData() {
+            const saved = localStorage.getItem('teamA_data');
+            if (saved) {
+                const data = JSON.parse(saved);
+                Object.assign(teamData, data);
+                if (data.userPosition) {
+                    userPosition = data.userPosition;
+                }
+            }
+        }
+        
+        // Cleanup
+        window.addEventListener('beforeunload', function() {
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+            }
+        });
+    </script>
+</body>
+</html>
