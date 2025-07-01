@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏕️ Raid Escuteiros - Competição Tecnológica</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 10px;
+        }
+        
+        .container {
+            max-width: 430px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            min-height: calc(100vh - 20px);
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2c5530 0%, #4a7c59 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .header h1 {
+            font-size: 1.8em;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 0.9em;
+        }
+        
+        .team-selector {
+            background: rgba(255,255,255,0.1);
+            border-radius: 15px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+        
+        .team-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .team-btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid transparent;
+        }
+        
+        .team-btn.active {
+            background: white;
+            color: #2c5530;
+            border-color: white;
+        }
+        
+        .team-btn.team-a.active { background: #f44336; color: white; }
+        .team-btn.team-b.active { background: #2196f3; color: white; }
+        .team-btn.team-c.active { background: #ff9800; color: white; }
+        
+        .main-content {
+            padding: 20px;
+        }
+        
+        .status-bar {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .gps-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .gps-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #f44336;
+            animation: pulse 2s infinite;
+        }
+        
+        .gps-indicator.active {
+            background: #4caf50;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .leaderboard {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .leaderboard h3 {
+            text-align: center;
+            color: #2c5530;
+            margin-bottom: 15px;
+        }
+        
+        .team-score {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+        
+        .team-score.team-a { background: rgba(244, 67, 54, 0.1); }
+        .team-score.team-b { background: rgba(33, 150, 243, 0.1); }
+        .team-score.team-c { background: rgba(255, 152, 0, 0.1); }
+        
+        .checkpoint-list {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 2px solid #e0e0e0;
+        }
+        
+        .checkpoint {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 12px;
+            border: 2px solid #e0e0e0;
+            transition: all 0.3s ease;
+        }
+        
+        .checkpoint.available {
+            border-color: #4caf50;
+            background: rgba(76, 175, 80, 0.1);
+            cursor: pointer;
+        }
+        
+        .checkpoint.completed {
+            border-color: #2196f3;
+            background: rgba(33, 150, 243, 0.1);
+        }
+        
+        .checkpoint.locked {
+            border-color: #bdbdbd;
+            background: #f5f5f5;
+            opacity: 0.7;
+        }
+        
+        .checkpoint-info {
+            flex: 1;
+        }
+        
+        .checkpoint-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .checkpoint-distance {
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        .checkpoint-status {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+        }
+        
+        .available .checkpoint-status {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .completed .checkpoint-status {
+            background: #2196f3;
+            color: white;
+        }
+        
+        .locked .checkpoint-status {
+            background: #bdbdbd;
+            color: white;
+        }
+        
+        .challenge-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+        
+        .challenge-content {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .challenge-title {
+            color: #2c5530;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+        }
+        
+        .challenge-description {
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .photo-challenge {
+            margin: 20px 0;
+        }
+        
+        .photo-input {
+            width: 100%;
+            padding: 15px;
+            border: 2px dashed #ccc;
+            border-radius: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .photo-input:hover {
+            border-color: #4caf50;
+            background: rgba(76, 175, 80, 0.1);
+        }
+        
+        .challenge-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #666;
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        
+        .sabotage-section {
+            background: #fff3e0;
+            border-radius: 15px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 2px solid #ff9800;
+        }
+        
+        .sabotage-btn {
+            width: 100%;
+            padding: 15px;
+            background: #ff5722;
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            font-size: 1.1em;
+        }
+        
+        .quiz-option {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .quiz-option:hover {
+            border-color: #4caf50;
+            background: rgba(76, 175, 80, 0.1);
+        }
+        
+        .quiz-option.selected {
+            border-color: #4caf50;
+            background: rgba(76, 175, 80, 0.2);
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #4caf50;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 1001;
+            display: none;
+        }
+        
+        .notification.error {
+            background: #f44336;
+        }
+        
+        .notification.warning {
+            background: #ff9800;
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+                min-height: 100vh;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏕️ Raid Tecnológico</h1>
+            <p>Santiago do Cacém ↔ Monte do Paio</p>
+            
+            <div class="team-selector">
+                <p style="margin-bottom: 10px;">Seleciona a tua equipa:</p>
+                <div class="team-buttons">
+                    <button class="team-btn team-a" onclick="selectTeam('A')">🔴 Equipa A</button>
+                    <button class="team-btn team-b" onclick="selectTeam('B')">🔵 Equipa B</button>
+                    <button class="team-btn team-c" onclick="selectTeam('C')">🟠 Equipa C</button>
+                </div>
+            </div>
+        </div>
+        
+        <div class="main-content">
+            <div class="status-bar">
+                <div class="gps-status">
+                    <div class="gps-indicator" id="gpsIndicator"></div>
+                    <span id="gpsStatus">A ativar GPS...</span>
+                </div>
+                <div id="currentLocation">Localização: A determinar...</div>
+            </div>
+            
+            <div class="leaderboard">
+                <h3>🏆 Classificação</h3>
+                <div class="team-score team-a">
+                    <span>🔴 Equipa A</span>
+                    <span id="scoreA">0 pts</span>
+                </div>
+                <div class="team-score team-b">
+                    <span>🔵 Equipa B</span>
+                    <span id="scoreB">0 pts</span>
+                </div>
+                <div class="team-score team-c">
+                    <span>🟠 Equipa C</span>
+                    <span id="scoreC">0 pts</span>
+                </div>
+            </div>
+            
+            <div class="checkpoint-list">
+                <h3>📍 Pontos de Controlo</h3>
+                <div id="checkpointList"></div>
+            </div>
+            
+            <div class="sabotage-section" id="sabotageSection" style="display: none;">
+                <h3>⚡ Sabotagem</h3>
+                <p>Podes sabotar outras equipas! Usa com estratégia.</p>
+                <button class="sabotage-btn" onclick="initiateSabotage()">
+                    💥 Atacar Equipa Rival (2 disponíveis)
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Challenge Modal -->
+    <div class="challenge-modal" id="challengeModal">
+        <div class="challenge-content" id="challengeContent">
+            <!-- Content será injetado dinamicamente -->
+        </div>
+    </div>
+    
+    <!-- Notification -->
+    <div class="notification" id="notification"></div>
+    
+    <script>
+        // Estado do jogo
+        let currentTeam = null;
+        let userPosition = null;
+        let watchId = null;
+        
+        // Dados do jogo
+        const gameData = {
+            teams: {
+                A: { score: 0, completedCPs: [], sabotagesUsed: 0 },
+                B: { score: 0, completedCPs: [], sabotagesUsed: 0 },
+                C: { score: 0, completedCPs: [], sabotagesUsed: 0 }
+            },
+            
+            checkpoints: [
+                {
+                    id: 'start',
+                    name: 'Partida - Santiago do Cacém',
+                    lat: 38.0167,
+                    lng: -8.6833,
+                    radius: 50,
+                    points: 100,
+                    challengeType: 'photo',
+                    challenge: {
+                        title: '📸 Foto de Equipa',
+                        description: 'Tirem uma foto de toda a equipa em frente ao marco de Santiago do Cacém!',
+                        instruction: 'Todos têm de estar visíveis e sorridentes!'
+                    }
+                },
+                {
+                    id: 'cp1',
+                    name: 'CP1 - Vila Nova de Santo André',
+                    lat: 37.9719,
+                    lng: -8.7889,
+                    radius: 30,
+                    points: 150,
+                    challengeType: 'quiz',
+                    challenge: {
+                        title: '🧠 Quiz Local',
+                        description: 'Pergunta sobre a região:',
+                        question: 'Qual é o nome da lagoa próxima desta vila?',
+                        options: ['Lagoa de Óbidos', 'Lagoa de Santo André', 'Lagoa de Albufeira', 'Lagoa de Melides'],
+                        correct: 1
+                    }
+                },
+                {
+                    id: 'cp2',
+                    name: 'CP2 - Reserva Natural',
+                    lat: 37.9500,
+                    lng: -8.7750,
+                    radius: 40,
+                    points: 200,
+                    challengeType: 'photo',
+                    challenge: {
+                        title: '🌿 Desafio Natureza',
+                        description: 'Encontrem e fotografem 3 espécies diferentes de plantas ou animais!',
+                        instruction: 'Cada espécie numa foto separada com legenda'
+                    }
+                },
+                {
+                    id: 'cp3',
+                    name: 'CP3 - Margem da Lagoa',
+                    lat: 37.9400,
+                    lng: -8.7600,
+                    radius: 25,
+                    points: 175,
+                    challengeType: 'game',
+                    challenge: {
+                        title: '🎯 Jogo de Memória',
+                        description: 'Memorizem a sequência que aparece no ecrã!',
+                        instruction: 'Tenham atenção - só mostro uma vez!'
+                    }
+                },
+                {
+                    id: 'cp4',
+                    name: 'CP4 - Cruzamento de Brescos',
+                    lat: 37.9550,
+                    lng: -8.7400,
+                    radius: 30,
+                    points: 125,
+                    challengeType: 'photo',
+                    challenge: {
+                        title: '🤳 Selfie Criativa',
+                        description: 'Tirem uma selfie criativa usando apenas elementos naturais como adereços!',
+                        instruction: 'Sejam criativos - sem objetos artificiais!'
+                    }
+                },
+                {
+                    id: 'finish',
+                    name: 'Chegada - Monte do Paio',
+                    lat: 38.0658,
+                    lng: -8.7734,
+                    radius: 50,
+                    points: 300,
+                    challengeType: 'final',
+                    challenge: {
+                        title: '🏕️ Desafio Final',
+                        description: 'Chegaram ao acampamento! Completem o desafio final.',
+                        instruction: 'Demonstrem uma técnica escutista à vossa escolha!'
+                    }
+                }
+            ]
+        };
+        
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            loadGameState();
+            initGPS();
+            renderCheckpoints();
+            updateLeaderboard();
+        });
+        
+        // Seleção de equipa
+        function selectTeam(team) {
+            currentTeam = team;
+            document.querySelectorAll('.team-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.team-btn.team-${team.toLowerCase()}`).classList.add('active');
+            
+            // Mostrar seção de sabotagem se equipa selecionada
+            document.getElementById('sabotageSection').style.display = 'block';
+            
+            saveGameState();
+            showNotification(`Equipa ${team} selecionada!`, 'success');
+        }
+        
+        // GPS
+        function initGPS() {
+            if (!navigator.geolocation) {
+                showNotification('GPS não disponível neste dispositivo', 'error');
+                return;
+            }
+            
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 30000
+            };
+            
+            watchId = navigator.geolocation.watchPosition(
+                updatePosition,
+                handleGPSError,
+                options
+            );
+        }
+        
+        function updatePosition(position) {
+            userPosition = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+                accuracy: position.coords.accuracy
+            };
+            
+            document.getElementById('gpsIndicator').classList.add('active');
+            document.getElementById('gpsStatus').textContent = 'GPS Ativo';
+            document.getElementById('currentLocation').textContent = 
+                `Lat: ${userPosition.lat.toFixed(4)}, Lng: ${userPosition.lng.toFixed(4)}`;
+            
+            checkNearbyCheckpoints();
+        }
+        
+        function handleGPSError(error) {
+            console.error('Erro GPS:', error);
+            document.getElementById('gpsStatus').textContent = 'Erro GPS - Tenta recarregar';
+            showNotification('Erro ao obter localização GPS', 'error');
+        }
+        
+        // Verificar proximidade aos checkpoints
+        function checkNearbyCheckpoints() {
+            if (!userPosition || !currentTeam) return;
+            
+            gameData.checkpoints.forEach(cp => {
+                const distance = calculateDistance(
+                    userPosition.lat, userPosition.lng,
+                    cp.lat, cp.lng
+                );
+                
+                if (distance <= cp.radius && !gameData.teams[currentTeam].completedCPs.includes(cp.id)) {
+                    makeCheckpointAvailable(cp.id);
+                }
+            });
+            
+            renderCheckpoints();
+        }
+        
+        // Calcular distância entre coordenadas (Haversine)
+        function calculateDistance(lat1, lng1, lat2, lng2) {
+            const R = 6371000; // Raio da Terra em metros
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                     Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                     Math.sin(dLng/2) * Math.sin(dLng/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+        
+        // Renderizar checkpoints
+        function renderCheckpoints() {
+            const container = document.getElementById('checkpointList');
+            container.innerHTML = '';
+            
+            gameData.checkpoints.forEach(cp => {
+                const div = document.createElement('div');
+                div.className = 'checkpoint';
+                
+                let status = 'locked';
+                let statusIcon = '🔒';
+                let distance = '';
+                
+                if (currentTeam) {
+                    if (gameData.teams[currentTeam].completedCPs.includes(cp.id)) {
+                        status = 'completed';
+                        statusIcon = '✅';
+                    } else if (userPosition) {
+                        const dist = calculateDistance(userPosition.lat, userPosition.lng, cp.lat, cp.lng);
+                        distance = `${Math.round(dist)}m`;
+                        
+                        if (dist <= cp.radius) {
+                            status = 'available';
+                            statusIcon = '🎯';
+                            div.onclick = () => openChallenge(cp.id);
+                        }
+                    }
+                }
+                
+                div.className += ` ${status}`;
+                div.innerHTML = `
+                    <div class="checkpoint-info">
+                        <div class="checkpoint-name">${cp.name}</div>
+                        <div class="checkpoint-distance">${cp.points} pontos ${distance}</div>
+                    </div>
+                    <div class="checkpoint-status">${statusIcon}</div>
+                `;
+                
+                container.appendChild(div);
+            });
+        }
+        
+        // Abrir desafio
+        function openChallenge(checkpointId) {
+            if (!currentTeam) {
+                showNotification('Seleciona primeiro a tua equipa!', 'warning');
+                return;
+            }
+            
+            const cp = gameData.checkpoints.find(c => c.id === checkpointId);
+            if (!cp) return;
+            
+            const modal = document.getElementById('challengeModal');
+            const content = document.getElementById('challengeContent');
+            
+            let challengeHTML = `
+                <h2 class="challenge-title">${cp.challenge.title}</h2>
+                <p class="challenge-description">${cp.challenge.description}</p>
+            `;
+            
+            if (cp.challengeType === 'photo') {
+                challengeHTML += `
+                    <div class="photo-challenge">
+                        <input type="file" id="photoInput" accept="image/*" capture="camera" style="display: none;">
+                        <div class="photo-input" onclick="document.getElementById('photoInput').click()">
+                            📸 Tirar Foto
+                        </div>
+                        <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
+                            ${cp.challenge.instruction}
+                        </p>
+                    </div>
+                `;
+            } else if (cp.challengeType === 'quiz') {
+                challengeHTML += `
+                    <div class="quiz-challenge">
+                        <h4>${cp.challenge.question}</h4>
+                        <div id="quizOptions">
+                            ${cp.challenge.options.map((option, index) => 
+                                `<button class="quiz-option" onclick="selectQuizOption(${index})" data-index="${index}">
+                                    ${option}
+                                </button>`
+                            ).join('')}
+                        </div>
+                    </div>
+                `;
+            } else if (cp.challengeType === 'game') {
+                challengeHTML += `
+                    <div class="memory-game">
+                        <p>Clica "Iniciar" para começar o jogo de memória!</p>
+                        <button class="btn btn-primary" onclick="startMemoryGame()">Iniciar Jogo</button>
+                        <div id="memorySequence" style="margin: 20px 0; font-size: 2em; min-height: 60px;"></div>
+                    </div>
+                `;
+            }
+            
+            challengeHTML += `
+                <div class="challenge-buttons">
+                    <button class="btn btn-primary" onclick="completeChallenge('${checkpointId}')">
+                        Completar (+${cp.points} pts)
+                    </button>
+                    <button class="btn btn-secondary" onclick="closeChallenge()">
+                        Fechar
+                    </button>
+                </div>
+            `;
+            
+            content.innerHTML = challengeHTML;
+            modal.style.display = 'flex';
+        }
+        
+        // Completar desafio
+        function completeChallenge(checkpointId) {
+            if (!currentTeam) return;
+            
+            const cp = gameData.checkpoints.find(c => c.id === checkpointId);
+            if (!cp) return;
+            
+            // Adicionar pontos
+            gameData.teams[currentTeam].score += cp.points;
+            gameData.teams[currentTeam].completedCPs.push(checkpointId);
+            
+            // Bonus para primeira equipa
+            const isFirst = !Object.values(gameData.teams)
+                .some(team => team !== gameData.teams[currentTeam] && 
+                             team.completedCPs.includes(checkpointId));
+            
+            if (isFirst) {
+                gameData.teams[currentTeam].score += 50;
+                showNotification(`+${cp.points + 50} pts! Primeira equipa! 🥇`, 'success');
+            } else {
+                showNotification(`+${cp.points} pontos! 🎯`, 'success');
+            }
+            
+            saveGameState();
+            updateLeaderboard();
+            renderCheckpoints();
+            closeChallenge();
+        }
+        
+        // Fechar modal de desafio
+        function closeChallenge() {
+            document.getElementById('challengeModal').style.display = 'none';
+        }
+        
+        // Quiz
+        function selectQuizOption(index) {
+            document.querySelectorAll('.quiz-option').forEach(opt => opt.classList.remove('selected'));
+            document.querySelector(`[data-index="${index}"]`).classList.add('selected');
+        }
+        
+        // Jogo de memória
+        function startMemoryGame() {
+            const sequence = [];
+            const symbols = ['🔴', '🔵', '🟡', '🟢', '🟣'];
+            
+            // Gerar sequência aleatória
+            for (let i = 0; i < 5; i++) {
+                sequence.push(symbols[Math.floor(Math.random() * symbols.length)]);
+            }
+            
+            const display = document.getElementById('memorySequence');
+            display.innerHTML = 'Memoriza esta sequência:';
+            
+            // Mostrar sequência
+            setTimeout(() => {
+                display.innerHTML = sequence.join(' ');
+            }, 1000);
+            
+            // Esconder e pedir resposta
+            setTimeout(() => {
+                display.innerHTML = `
+                    <input type="text" placeholder="Escreve a sequência (ex: 🔴🔵🟡)" 
+                           style="width: 100%; padding: 10px; border-radius: 8px; border: 2px solid #ccc;">
+                `;
+            }, 4000);
+        }
+        
+        // Sabotagem
+        function initiateSabotage() {
+            if (!currentTeam || gameData.teams[currentTeam].sabotagesUsed >= 2) {
+                showNotification('Sem sabotagens disponíveis!', 'warning');
+                return;
+            }
+            
+            const rivalTeams = ['A', 'B', 'C'].filter(t => t !== currentTeam);
+            
+            const content = `
+                <h2 class="challenge-title">⚡ Sabotagem</h2>
+                <p>Escolhe a equipa rival para atacar:</p>
+                <div style="margin: 20px 0;">
+                    ${rivalTeams.map(team => 
+                        `<button class="btn btn-primary" style="margin: 5px; width: 100%;" 
+                                onclick="executeSabotage('${team}')">
+                            Atacar Equipa ${team}
+                        </button>`
+                    ).join('')}
+                </div>
+                <button class="btn btn-secondary" onclick="closeChallenge()">Cancelar</button>
+            `;
+            
+            document.getElementById('challengeContent').innerHTML = content;
+            document.getElementById('challengeModal').style.display = 'flex';
+        }
+        
+        function executeSabotage(targetTeam) {
+            gameData.teams[currentTeam].sabotagesUsed++;
+            
+            // Simular mini-jogo de sabotagem
+            const success = Math.random() > 0.3; // 70% de sucesso
+            
+            if (success) {
+                gameData.teams[currentTeam].score += 30;
+                showNotification(`Sabotagem bem-sucedida! Equipa ${targetTeam} atrasada! +30 pts`, 'success');
+            } else {
+                showNotification(`Sabotagem falhada! Equipa ${targetTeam} defendeu-se!`, 'error');
+            }
+            
+            saveGameState();
+            updateLeaderboard();
+            closeChallenge();
+        }
+        
+        // Atualizar leaderboard
+        function updateLeaderboard() {
+            document.getElementById('scoreA').textContent = `${gameData.teams.A.score} pts`;
+            document.getElementById('scoreB').textContent = `${gameData.teams.B.score} pts`;
+            document.getElementById('scoreC').textContent = `${gameData.teams.C.score} pts`;
+        }
+        
+        // Notificações
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Salvar/carregar estado
+        function saveGameState() {
+            localStorage.setItem('raidGameData', JSON.stringify(gameData));
+            localStorage.setItem('raidCurrentTeam', currentTeam);
+        }
+        
+        function loadGameState() {
+            const savedData = localStorage.getItem('raidGameData');
+            const savedTeam = localStorage.getItem('raidCurrentTeam');
+            
+            if (savedData) {
+                Object.assign(gameData, JSON.parse(savedData));
+            }
+            
+            if (savedTeam) {
+                selectTeam(savedTeam);
+            }
+        }
+        
+        // Cleanup ao sair
+        window.addEventListener('beforeunload', function() {
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+            }
+        });
+    </script>
+</body>
+</html>
