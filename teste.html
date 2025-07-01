@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🧪 TESTE - Raid Tecnológico</title>
+    <title>🧪 TESTE - Domínio de Território</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         * {
@@ -14,7 +14,7 @@
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+            background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
             min-height: 100vh;
             color: white;
         }
@@ -25,11 +25,10 @@
             background: white;
             color: #333;
             min-height: 100vh;
-            position: relative;
         }
         
         .header {
-            background: linear-gradient(135deg, #4caf50 0%, #2e7d32 100%);
+            background: linear-gradient(135deg, #2e7d32 0%, #1b5e20 100%);
             color: white;
             padding: 20px;
             text-align: center;
@@ -37,26 +36,70 @@
         }
         
         .header h1 {
-            font-size: 1.5em;
+            font-size: 1.4em;
             margin-bottom: 5px;
         }
         
-        .team-stats {
+        .test-info {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 0.9em;
+        }
+        
+        .team-selector {
             background: rgba(255,255,255,0.1);
             border-radius: 15px;
             padding: 15px;
             margin-top: 15px;
+        }
+        
+        .team-buttons {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            gap: 8px;
+            justify-content: center;
+        }
+        
+        .team-btn {
+            flex: 1;
+            padding: 10px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            font-size: 0.9em;
+        }
+        
+        .team-btn.active {
+            background: white;
+            color: #2e7d32;
+            transform: scale(1.05);
+        }
+        
+        .team-btn.team-a.active { background: #f44336; color: white; }
+        .team-btn.team-b.active { background: #2196f3; color: white; }
+        .team-btn.team-c.active { background: #ff9800; color: white; }
+        
+        .game-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
         }
         
         .stat {
             text-align: center;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 12px;
         }
         
         .stat-value {
-            font-size: 1.4em;
+            font-size: 1.3em;
             font-weight: bold;
             display: block;
         }
@@ -68,32 +111,52 @@
         
         .test-controls {
             background: #fff3cd;
-            border: 2px solid #ffc107;
-            margin: 20px;
-            padding: 20px;
-            border-radius: 15px;
-            text-align: center;
-        }
-        
-        .test-controls h3 {
             color: #856404;
-            margin-bottom: 15px;
-        }
-        
-        .location-info {
-            background: #f8f9fa;
+            margin: 20px;
             padding: 15px;
-            border-radius: 10px;
-            margin: 10px 0;
-            font-family: monospace;
-            font-size: 0.9em;
+            border-radius: 12px;
+            border: 2px solid #ffc107;
         }
         
-        .test-buttons {
+        .test-controls h4 {
+            margin-bottom: 10px;
+        }
+        
+        .control-buttons {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
-            margin-top: 15px;
+            margin-top: 10px;
+        }
+        
+        .control-btn {
+            padding: 8px 12px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9em;
+        }
+        
+        .control-btn.primary {
+            background: #4caf50;
+            color: white;
+        }
+        
+        .control-btn.secondary {
+            background: #2196f3;
+            color: white;
+        }
+        
+        .control-btn.warning {
+            background: #ff9800;
+            color: white;
+        }
+        
+        .control-btn.danger {
+            background: #f44336;
+            color: white;
         }
         
         .status-section {
@@ -136,173 +199,151 @@
             overflow: hidden;
             margin: 20px;
             box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            position: relative;
         }
         
-        .checkpoint-section {
+        .map-legend {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255,255,255,0.95);
+            border-radius: 10px;
+            padding: 10px;
+            z-index: 1000;
+            font-size: 0.8em;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin: 3px 0;
+        }
+        
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            border: 1px solid white;
+        }
+        
+        .territories-section {
             padding: 0 20px 20px;
         }
         
-        .checkpoint {
+        .territory {
             background: white;
             border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            padding: 15px;
+            margin-bottom: 12px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
             border: 3px solid transparent;
             transition: all 0.3s ease;
+            position: relative;
         }
         
-        .checkpoint.next {
-            border-color: #4caf50;
-            background: linear-gradient(135deg, #fff 0%, #e8f5e8 100%);
+        .territory.neutral {
+            border-color: #bdbdbd;
         }
         
-        .checkpoint.available {
-            border-color: #ff9800;
-            background: linear-gradient(135deg, #fff 0%, #fff3e0 100%);
-            cursor: pointer;
-            transform: scale(1.02);
-            animation: glow 2s infinite;
+        .territory.team-a {
+            border-color: #f44336;
+            background: linear-gradient(135deg, #fff 0%, #ffebee 100%);
         }
         
-        @keyframes glow {
-            0% { box-shadow: 0 5px 15px rgba(255, 152, 0, 0.3); }
-            50% { box-shadow: 0 5px 25px rgba(255, 152, 0, 0.6); }
-            100% { box-shadow: 0 5px 15px rgba(255, 152, 0, 0.3); }
-        }
-        
-        .checkpoint.completed {
+        .territory.team-b {
             border-color: #2196f3;
             background: linear-gradient(135deg, #fff 0%, #e3f2fd 100%);
         }
         
-        .checkpoint.locked {
-            opacity: 0.6;
-            background: #f5f5f5;
+        .territory.team-c {
+            border-color: #ff9800;
+            background: linear-gradient(135deg, #fff 0%, #fff3e0 100%);
         }
         
-        .checkpoint-header {
+        .territory.can-capture {
+            border-color: #4caf50;
+            background: linear-gradient(135deg, #fff 0%, #e8f5e8 100%);
+            animation: glow 2s infinite;
+        }
+        
+        @keyframes glow {
+            0% { box-shadow: 0 0 5px rgba(76, 175, 80, 0.5); }
+            50% { box-shadow: 0 0 15px rgba(76, 175, 80, 0.8); }
+            100% { box-shadow: 0 0 5px rgba(76, 175, 80, 0.5); }
+        }
+        
+        .territory-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         
-        .checkpoint-name {
+        .territory-name {
             font-weight: bold;
-            font-size: 1.1em;
-            color: #4caf50;
+            font-size: 1em;
+            color: #2e7d32;
         }
         
-        .checkpoint-status {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.2em;
+        .territory-owner {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.8em;
+            font-weight: bold;
             color: white;
         }
         
-        .next .checkpoint-status {
+        .territory-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+        
+        .info-item {
+            text-align: center;
+            background: rgba(46, 125, 50, 0.1);
+            padding: 6px;
+            border-radius: 6px;
+        }
+        
+        .info-value {
+            font-weight: bold;
+            color: #2e7d32;
+            display: block;
+            font-size: 0.9em;
+        }
+        
+        .info-label {
+            font-size: 0.7em;
+            color: #666;
+        }
+        
+        .capture-button {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1em;
+            display: none;
+        }
+        
+        .capture-button.available {
+            display: block;
             background: #4caf50;
-        }
-        
-        .available .checkpoint-status {
-            background: #ff9800;
+            color: white;
             animation: bounce 2s infinite;
-        }
-        
-        .completed .checkpoint-status {
-            background: #2196f3;
-        }
-        
-        .locked .checkpoint-status {
-            background: #bdbdbd;
         }
         
         @keyframes bounce {
             0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
-            40% { transform: translateY(-10px); }
-            60% { transform: translateY(-5px); }
-        }
-        
-        .checkpoint-details {
-            color: #666;
-            margin-bottom: 10px;
-        }
-        
-        .checkpoint-distance {
-            color: #4caf50;
-            font-weight: bold;
-            font-size: 0.9em;
-        }
-        
-        .btn {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 12px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin: 5px;
-        }
-        
-        .btn-primary {
-            background: #4caf50;
-            color: white;
-        }
-        
-        .btn-warning {
-            background: #ff9800;
-            color: white;
-        }
-        
-        .btn-info {
-            background: #2196f3;
-            color: white;
-        }
-        
-        .btn-secondary {
-            background: #666;
-            color: white;
-        }
-        
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-        
-        .challenge-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-            padding: 20px;
-        }
-        
-        .challenge-content {
-            background: white;
-            border-radius: 20px;
-            padding: 25px;
-            max-width: 400px;
-            width: 100%;
-            text-align: center;
-            max-height: 80vh;
-            overflow-y: auto;
-        }
-        
-        .challenge-title {
-            color: #4caf50;
-            margin-bottom: 20px;
-            font-size: 1.4em;
+            40% { transform: translateY(-3px); }
+            60% { transform: translateY(-1px); }
         }
         
         .floating-notification {
@@ -312,12 +353,13 @@
             transform: translateX(-50%);
             background: #4caf50;
             color: white;
-            padding: 15px 25px;
-            border-radius: 25px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            padding: 12px 20px;
+            border-radius: 20px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
             z-index: 1001;
             display: none;
             animation: slideIn 0.5s ease;
+            font-weight: bold;
         }
         
         .floating-notification.error {
@@ -328,89 +370,90 @@
             background: #ff9800;
         }
         
+        .floating-notification.battle {
+            background: #ff5722;
+        }
+        
         @keyframes slideIn {
             from { transform: translateX(-50%) translateY(-100%); }
             to { transform: translateX(-50%) translateY(0); }
         }
         
-        .progress-bar {
-            background: rgba(255,255,255,0.2);
-            border-radius: 10px;
-            height: 8px;
-            margin-top: 10px;
-            overflow: hidden;
-        }
-        
-        .progress-fill {
+        .leaderboard {
             background: white;
-            height: 100%;
-            width: 0%;
-            transition: width 0.5s ease;
-        }
-        
-        .firebase-status {
-            background: #e8f5e8;
-            border-left: 4px solid #4caf50;
-            padding: 15px;
             margin: 20px;
-            border-radius: 8px;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
         }
         
-        .firebase-status.error {
-            background: #ffebee;
-            border-left-color: #f44336;
+        .leaderboard h3 {
+            text-align: center;
+            color: #2e7d32;
+            margin-bottom: 12px;
+            font-size: 1.1em;
         }
+        
+        .team-score {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 6px 0;
+            border-radius: 8px;
+            font-weight: bold;
+            font-size: 0.9em;
+        }
+        
+        .team-score.team-a { background: rgba(244, 67, 54, 0.1); }
+        .team-score.team-b { background: rgba(33, 150, 243, 0.1); }
+        .team-score.team-c { background: rgba(255, 152, 0, 0.1); }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🧪 VERSÃO TESTE</h1>
-            <p>Sistema de Raid • Testes Locais</p>
+            <h1>🧪 TESTE - Domínio de Território</h1>
+            <p>Versão de teste • Zonas próximas</p>
             
-            <div class="team-stats">
+            <div class="test-info">
+                <strong>🎯 Modo Teste:</strong> Territórios num raio de 50m da tua localização para testares facilmente!
+            </div>
+            
+            <div class="team-selector">
+                <p style="margin-bottom: 8px; font-size: 0.9em;">Seleciona a tua equipa:</p>
+                <div class="team-buttons">
+                    <button class="team-btn team-a" onclick="selectTeam('A')">🔴 A</button>
+                    <button class="team-btn team-b" onclick="selectTeam('B')">🔵 B</button>
+                    <button class="team-btn team-c" onclick="selectTeam('C')">🟠 C</button>
+                </div>
+            </div>
+            
+            <div class="game-stats">
                 <div class="stat">
                     <span class="stat-value" id="teamScore">0</span>
                     <span class="stat-label">Pontos</span>
                 </div>
                 <div class="stat">
-                    <span class="stat-value" id="teamStatus">Teste</span>
-                    <span class="stat-label">Status</span>
+                    <span class="stat-value" id="territoriesOwned">0</span>
+                    <span class="stat-label">Territórios</span>
                 </div>
                 <div class="stat">
-                    <span class="stat-value" id="completedCPs">0/3</span>
-                    <span class="stat-label">CPs</span>
+                    <span class="stat-value" id="pointsPerMin">0</span>
+                    <span class="stat-label">Pts/min</span>
                 </div>
-            </div>
-            
-            <div class="progress-bar">
-                <div class="progress-fill" id="progressFill"></div>
             </div>
         </div>
         
         <div class="test-controls">
-            <h3>🎮 Controlos de Teste</h3>
-            <div class="location-info" id="locationInfo">
-                Aguardando GPS...
+            <h4>🎮 Controlos de Teste</h4>
+            <p style="margin-bottom: 10px; font-size: 0.9em;">Use os botões para simular movimento e testar o sistema:</p>
+            <div class="control-buttons">
+                <button class="control-btn primary" onclick="startGame()">▶️ Iniciar</button>
+                <button class="control-btn warning" onclick="pauseGame()">⏸️ Pausar</button>
+                <button class="control-btn secondary" onclick="simulateMovement()">🚶 Simular</button>
+                <button class="control-btn danger" onclick="resetGame()">🔄 Reset</button>
             </div>
-            <div class="test-buttons">
-                <button class="btn btn-warning" onclick="createTestCheckpoints()">
-                    📍 Criar CPs Aqui
-                </button>
-                <button class="btn btn-info" onclick="simulateMovement()">
-                    🚶 Simular Movimento
-                </button>
-                <button class="btn btn-primary" onclick="resetTest()">
-                    🔄 Reset Teste
-                </button>
-                <button class="btn btn-secondary" onclick="toggleDebug()">
-                    🔧 Debug Mode
-                </button>
-            </div>
-        </div>
-        
-        <div class="firebase-status" id="firebaseStatus">
-            🔄 Conectando ao Firebase...
         </div>
         
         <div class="status-section">
@@ -424,21 +467,49 @@
         </div>
         
         <div class="map-container">
+            <div class="map-legend">
+                <strong>🗺️ Territórios</strong>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #4caf50;"></div>
+                    <span>Central</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ff9800;"></div>
+                    <span>Médio</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f44336;"></div>
+                    <span>Remoto</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #9c27b0;"></div>
+                    <span>Lendário</span>
+                </div>
+            </div>
             <div id="map" style="height: 100%;"></div>
         </div>
         
-        <div class="checkpoint-section">
-            <h3 style="text-align: center; color: #4caf50; margin-bottom: 20px;">
-                📍 Checkpoints de Teste
-            </h3>
-            <div id="checkpointList"></div>
+        <div class="leaderboard">
+            <h3>🏆 Pontuação</h3>
+            <div class="team-score team-a">
+                <span>🔴 Equipa A</span>
+                <span id="scoreA">0 pts</span>
+            </div>
+            <div class="team-score team-b">
+                <span>🔵 Equipa B</span>
+                <span id="scoreB">0 pts</span>
+            </div>
+            <div class="team-score team-c">
+                <span>🟠 Equipa C</span>
+                <span id="scoreC">0 pts</span>
+            </div>
         </div>
-    </div>
-    
-    <!-- Challenge Modal -->
-    <div class="challenge-modal" id="challengeModal">
-        <div class="challenge-content" id="challengeContent">
-            <!-- Content dinamicamente injetado -->
+        
+        <div class="territories-section">
+            <h3 style="text-align: center; color: #2e7d32; margin-bottom: 15px; font-size: 1.1em;">
+                🏰 Territórios de Teste
+            </h3>
+            <div id="territoriesList"></div>
         </div>
     </div>
     
@@ -462,34 +533,149 @@
             appId: "1:364137677559:web:2be68cd6dcd6ccbf5ac9f2"
         };
         
-        // Estado do teste
+        // Estado do jogo
         let db = null;
         let isFirebaseEnabled = false;
         let map = null;
         let watchId = null;
         let userPosition = null;
+        let currentTeam = null;
+        let gameActive = false;
+        let territoryMarkers = [];
         let userMarker = null;
-        let checkpointMarkers = [];
-        let debugMode = false;
+        let pointsInterval = null;
+        let simulationIndex = 0;
         
-        const testData = {
-            id: 'TEST',
-            name: 'Teste Local',
-            color: '#4caf50',
-            score: 0,
-            completedCPs: [],
-            currentCP: 0
+        // Tua localização base
+        const baseLocation = {
+            lat: 39.36748,
+            lng: -9.39131
         };
         
-        // Checkpoints serão criados dinamicamente baseados na localização
-        let checkpoints = [];
+        const gameData = {
+            teams: {
+                A: { score: 0, color: '#f44336', name: 'Equipa Vermelha' },
+                B: { score: 0, color: '#2196f3', name: 'Equipa Azul' },
+                C: { score: 0, color: '#ff9800', name: 'Equipa Laranja' }
+            },
+            territories: {},
+            gameStarted: false,
+            startTime: null
+        };
+        
+        // Territórios de TESTE - todos num raio de 50m da tua localização
+        const territories = [
+            // Norte (5m)
+            {
+                id: 'test_north',
+                name: '🧪 Norte',
+                description: 'Território teste ao norte',
+                lat: baseLocation.lat + 0.000045, // ~5m norte
+                lng: baseLocation.lng,
+                radius: 8,
+                pointsPerMinute: 2,
+                difficulty: 1,
+                type: 'central'
+            },
+            // Sul (8m)
+            {
+                id: 'test_south',
+                name: '🧪 Sul',
+                description: 'Território teste ao sul',
+                lat: baseLocation.lat - 0.000072, // ~8m sul
+                lng: baseLocation.lng,
+                radius: 10,
+                pointsPerMinute: 3,
+                difficulty: 1,
+                type: 'central'
+            },
+            // Este (10m)
+            {
+                id: 'test_east',
+                name: '🧪 Este',
+                description: 'Território teste ao este',
+                lat: baseLocation.lat,
+                lng: baseLocation.lng + 0.000090, // ~10m este
+                radius: 12,
+                pointsPerMinute: 5,
+                difficulty: 2,
+                type: 'intermediate'
+            },
+            // Oeste (12m)
+            {
+                id: 'test_west',
+                name: '🧪 Oeste',
+                description: 'Território teste ao oeste',
+                lat: baseLocation.lat,
+                lng: baseLocation.lng - 0.000090, // ~12m oeste
+                radius: 10,
+                pointsPerMinute: 4,
+                difficulty: 2,
+                type: 'intermediate'
+            },
+            // Nordeste (15m)
+            {
+                id: 'test_northeast',
+                name: '🧪 Nordeste',
+                description: 'Território remoto de teste',
+                lat: baseLocation.lat + 0.000100,
+                lng: baseLocation.lng + 0.000090,
+                radius: 8,
+                pointsPerMinute: 8,
+                difficulty: 3,
+                type: 'remote'
+            },
+            // Sudoeste (20m)
+            {
+                id: 'test_southwest',
+                name: '🧪 Sudoeste',
+                description: 'Território remoto de teste',
+                lat: baseLocation.lat - 0.000130,
+                lng: baseLocation.lng - 0.000120,
+                radius: 10,
+                pointsPerMinute: 10,
+                difficulty: 3,
+                type: 'remote'
+            },
+            // Centro Especial (tua localização exata)
+            {
+                id: 'test_center',
+                name: '👑 Centro Lendário',
+                description: 'Território especial na tua localização',
+                lat: baseLocation.lat,
+                lng: baseLocation.lng,
+                radius: 15,
+                pointsPerMinute: 15,
+                difficulty: 5,
+                type: 'legendary'
+            }
+        ];
+        
+        // Inicializar territórios
+        territories.forEach(territory => {
+            gameData.territories[territory.id] = {
+                ...territory,
+                owner: null,
+                controlTime: 0,
+                lastUpdate: null,
+                contested: false
+            };
+        });
         
         // Inicialização
         document.addEventListener('DOMContentLoaded', function() {
             initFirebase();
             initMap();
             initGPS();
+            renderTerritories();
             updateUI();
+            
+            showNotification("🧪 Versão de teste carregada! Territórios a 5-20m de ti!", 'success');
+            
+            if (isFirebaseEnabled) {
+                syncGameState();
+                listenForUpdates();
+            }
         });
         
         function initFirebase() {
@@ -497,351 +683,166 @@
                 const app = initializeApp(firebaseConfig);
                 db = getDatabase(app);
                 isFirebaseEnabled = true;
-                
-                document.getElementById('firebaseStatus').innerHTML = '✅ Firebase conectado com sucesso!';
-                document.getElementById('firebaseStatus').classList.remove('error');
-                
-                // Sync teste data
-                const testRef = ref(db, 'raid/test');
-                set(testRef, {
-                    active: true,
-                    timestamp: serverTimestamp(),
-                    data: testData
-                });
-                
-                showNotification("🔥 Sistema em tempo real ativo!", 'success');
+                console.log("🔥 Firebase conectado!");
+                showNotification("🔥 Firebase conectado!", 'success');
             } catch (error) {
                 console.error("Erro Firebase:", error);
-                document.getElementById('firebaseStatus').innerHTML = '❌ Firebase offline - modo local ativo';
-                document.getElementById('firebaseStatus').classList.add('error');
-                showNotification("Modo offline ativado", 'warning');
+                showNotification("⚠️ Modo offline ativo", 'warning');
             }
         }
         
         function initMap() {
-            // Mapa centrado em localização genérica inicialmente
-            map = L.map('map').setView([39.4699, -8.5450], 13);
+            // Centrar na tua localização
+            map = L.map('map').setView([baseLocation.lat, baseLocation.lng], 18);
             
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
                 attribution: '© OpenStreetMap contributors'
             }).addTo(map);
+            
+            // Adicionar territórios ao mapa
+            territories.forEach((territory, index) => {
+                let color = '#bdbdbd';
+                let radius = 8; // Pequeno para visualização
+                
+                // Cor baseada no tipo
+                if (territory.type === 'central') color = '#4caf50';
+                else if (territory.type === 'intermediate') color = '#ff9800';
+                else if (territory.type === 'remote') color = '#f44336';
+                else if (territory.type === 'legendary') color = '#9c27b0';
+                
+                const marker = L.circleMarker([territory.lat, territory.lng], {
+                    radius: radius,
+                    fillColor: color,
+                    color: 'white',
+                    weight: 2,
+                    fillOpacity: 0.8
+                }).addTo(map);
+                
+                marker.bindPopup(`
+                    <b>${territory.name}</b><br>
+                    ${territory.description}<br>
+                    <strong>${territory.pointsPerMinute} pts/min</strong><br>
+                    <em>Raio: ${territory.radius}m</em>
+                `);
+                
+                // Área de captura (círculo de raio real)
+                const captureArea = L.circle([territory.lat, territory.lng], {
+                    radius: territory.radius,
+                    fillColor: color,
+                    color: color,
+                    weight: 1,
+                    fillOpacity: 0.15,
+                    dashArray: '3, 3'
+                }).addTo(map);
+                
+                territoryMarkers.push({ marker, captureArea, territory });
+            });
+            
+            // Marcador da tua localização base
+            L.marker([baseLocation.lat, baseLocation.lng], {
+                icon: L.divIcon({
+                    className: 'base-marker',
+                    html: '🏠',
+                    iconSize: [20, 20]
+                })
+            }).addTo(map).bindPopup('🏠 Tua Localização Base');
         }
         
         function initGPS() {
             if (!navigator.geolocation) {
-                showNotification('GPS não disponível neste dispositivo', 'error');
+                showNotification('GPS não disponível - usar simulação', 'warning');
+                // Usar localização base como fallback
+                userPosition = {
+                    lat: baseLocation.lat,
+                    lng: baseLocation.lng,
+                    accuracy: 5,
+                    timestamp: Date.now()
+                };
+                updatePosition();
                 return;
             }
             
             const options = {
                 enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 30000
+                timeout: 5000,
+                maximumAge: 10000
             };
             
-            showNotification("🛰️ A obter localização GPS...", 'info');
-            
-            watchId = navigator.geolocation.watchPosition(
-                updatePosition,
-                handleGPSError,
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    userPosition = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude,
+                        accuracy: position.coords.accuracy,
+                        timestamp: Date.now()
+                    };
+                    updatePosition();
+                },
+                (error) => {
+                    console.warn('GPS error:', error);
+                    // Usar localização base como fallback
+                    userPosition = {
+                        lat: baseLocation.lat,
+                        lng: baseLocation.lng,
+                        accuracy: 5,
+                        timestamp: Date.now()
+                    };
+                    updatePosition();
+                    showNotification('📍 Usando localização base para teste', 'warning');
+                },
                 options
             );
         }
         
         function updatePosition(position) {
-            userPosition = {
-                lat: position.coords.latitude,
-                lng: position.coords.longitude,
-                accuracy: position.coords.accuracy,
-                timestamp: Date.now()
-            };
+            if (position && position.coords) {
+                userPosition = {
+                    lat: position.coords.latitude,
+                    lng: position.coords.longitude,
+                    accuracy: position.coords.accuracy,
+                    timestamp: Date.now()
+                };
+            }
             
             // Atualizar UI
             document.getElementById('gpsIndicator').classList.add('active');
             document.getElementById('gpsStatus').textContent = 'GPS Ativo';
             document.getElementById('gpsCoords').textContent = 
-                `${userPosition.lat.toFixed(6)}, ${userPosition.lng.toFixed(6)} (±${Math.round(userPosition.accuracy)}m)`;
-            
-            // Atualizar info de localização
-            document.getElementById('locationInfo').innerHTML = `
-                <strong>📍 Tua Localização:</strong><br>
-                Lat: ${userPosition.lat.toFixed(6)}<br>
-                Lng: ${userPosition.lng.toFixed(6)}<br>
-                Precisão: ±${Math.round(userPosition.accuracy)}m
-            `;
-            
-            // Centrar mapa na localização
-            map.setView([userPosition.lat, userPosition.lng], 16);
+                `${userPosition.lat.toFixed(6)}, ${userPosition.lng.toFixed(6)}`;
             
             // Atualizar marcador do utilizador
             if (userMarker) {
                 map.removeLayer(userMarker);
             }
             
-            userMarker = L.marker([userPosition.lat, userPosition.lng], {
-                icon: L.divIcon({
-                    className: 'user-marker',
-                    html: '🧪',
-                    iconSize: [25, 25]
-                })
-            }).addTo(map);
-            
-            userMarker.bindPopup('🧪 Tu estás aqui!<br>Teste do sistema');
-            
-            // Se ainda não há checkpoints, sugerir criação
-            if (checkpoints.length === 0) {
-                showNotification("📍 Clica 'Criar CPs Aqui' para gerar checkpoints de teste!", 'info');
-            } else {
-                checkNearbyCheckpoints();
-            }
-            
-            // Sync com Firebase
-            if (isFirebaseEnabled) {
-                const positionRef = ref(db, 'raid/test/position');
-                set(positionRef, {
-                    lat: userPosition.lat,
-                    lng: userPosition.lng,
-                    accuracy: userPosition.accuracy,
-                    timestamp: serverTimestamp()
-                });
-            }
-        }
-        
-        function handleGPSError(error) {
-            console.error('Erro GPS:', error);
-            let errorMsg = 'Erro GPS';
-            
-            switch(error.code) {
-                case error.PERMISSION_DENIED:
-                    errorMsg = "Permissão GPS negada";
-                    break;
-                case error.POSITION_UNAVAILABLE:
-                    errorMsg = "GPS indisponível";
-                    break;
-                case error.TIMEOUT:
-                    errorMsg = "Timeout GPS";
-                    break;
-            }
-            
-            document.getElementById('gpsStatus').textContent = errorMsg;
-            showNotification(errorMsg + ' - Permite localização!', 'error');
-        }
-        
-        // Criar checkpoints de teste baseados na localização atual
-        window.createTestCheckpoints = function() {
-            if (!userPosition) {
-                showNotification("❌ GPS necessário para criar checkpoints!", 'error');
-                return;
-            }
-            
-            // Limpar checkpoints existentes
-            checkpointMarkers.forEach(marker => map.removeLayer(marker));
-            checkpointMarkers = [];
-            
-            // Gerar 3 checkpoints num raio de 200m
-            const baseRadius = 0.002; // ~200m em graus
-            
-            checkpoints = [
-                {
-                    id: 'test1',
-                    name: 'CP1 - Teste Norte',
-                    description: 'Checkpoint de teste ao norte',
-                    lat: userPosition.lat + baseRadius,
-                    lng: userPosition.lng,
-                    radius: 50,
-                    points: 100,
-                    challengeType: 'photo',
-                    challenge: {
-                        title: '📸 Primeira Foto',
-                        description: 'Tira uma selfie para testar o sistema!',
-                        instruction: 'Sorri e diz "Teste!"'
-                    }
-                },
-                {
-                    id: 'test2', 
-                    name: 'CP2 - Teste Este',
-                    description: 'Checkpoint de teste ao este',
-                    lat: userPosition.lat,
-                    lng: userPosition.lng + baseRadius,
-                    radius: 50,
-                    points: 150,
-                    challengeType: 'quiz',
-                    challenge: {
-                        title: '🧠 Quiz Teste',
-                        description: 'Pergunta teste: Qual a capital de Portugal?',
-                        options: ['Porto', 'Lisboa', 'Braga', 'Faro'],
-                        correct: 1,
-                        explanation: 'Lisboa é a capital!'
-                    }
-                },
-                {
-                    id: 'test3',
-                    name: 'CP3 - Teste Sul',
-                    description: 'Checkpoint final de teste',
-                    lat: userPosition.lat - baseRadius,
-                    lng: userPosition.lng,
-                    radius: 50,
-                    points: 200,
-                    challengeType: 'final',
-                    challenge: {
-                        title: '🎉 Teste Completo!',
-                        description: 'Parabéns! Sistema testado com sucesso!',
-                        instruction: 'Foto comemorativa!'
-                    }
-                }
-            ];
-            
-            // Reset do progresso
-            testData.completedCPs = [];
-            testData.currentCP = 0;
-            testData.score = 0;
-            
-            // Adicionar marcadores ao mapa
-            checkpoints.forEach((cp, index) => {
-                let color = index === 0 ? '#4caf50' : '#bdbdbd';
-                
-                const marker = L.circleMarker([cp.lat, cp.lng], {
-                    radius: 20,
-                    fillColor: color,
-                    color: 'white',
-                    weight: 3,
-                    fillOpacity: 0.8
-                }).addTo(map);
-                
-                marker.bindPopup(`
-                    <b>${cp.name}</b><br>
-                    ${cp.description}<br>
-                    <strong>${cp.points} pontos</strong><br>
-                    <em>Raio: ${cp.radius}m</em>
-                `);
-                
-                checkpointMarkers.push(marker);
-                
-                // Mostrar círculo de detecção se debug mode
-                if (debugMode) {
-                    L.circle([cp.lat, cp.lng], {
-                        radius: cp.radius,
-                        fillColor: color,
-                        color: color,
-                        weight: 2,
-                        fillOpacity: 0.1
-                    }).addTo(map);
-                }
-            });
-            
-            renderCheckpoints();
-            updateUI();
-            
-            showNotification(`📍 ${checkpoints.length} checkpoints criados num raio de 200m!`, 'success');
-            
-            // Sync com Firebase
-            if (isFirebaseEnabled) {
-                const checkpointsRef = ref(db, 'raid/test/checkpoints');
-                set(checkpointsRef, checkpoints);
-            }
-        };
-        
-        // Simular movimento para o próximo checkpoint
-        window.simulateMovement = function() {
-            if (checkpoints.length === 0) {
-                showNotification("❌ Cria checkpoints primeiro!", 'error');
-                return;
-            }
-            
-            const nextCP = checkpoints[testData.currentCP];
-            if (!nextCP) {
-                showNotification("🏁 Todos os checkpoints completados!", 'info');
-                return;
-            }
-            
-            // "Mover" utilizador para o checkpoint
-            userPosition.lat = nextCP.lat;
-            userPosition.lng = nextCP.lng;
-            
-            // Atualizar mapa
-            map.setView([userPosition.lat, userPosition.lng], 18);
-            
-            if (userMarker) {
-                map.removeLayer(userMarker);
-            }
+            let teamIcon = '📍';
+            if (currentTeam === 'A') teamIcon = '🔴';
+            else if (currentTeam === 'B') teamIcon = '🔵';
+            else if (currentTeam === 'C') teamIcon = '🟠';
             
             userMarker = L.marker([userPosition.lat, userPosition.lng], {
                 icon: L.divIcon({
                     className: 'user-marker',
-                    html: '🧪',
-                    iconSize: [25, 25]
+                    html: teamIcon,
+                    iconSize: [20, 20]
                 })
             }).addTo(map);
             
-            // Atualizar coordenadas
-            document.getElementById('gpsCoords').textContent = 
-                `${userPosition.lat.toFixed(6)}, ${userPosition.lng.toFixed(6)} (SIMULADO)`;
+            userMarker.bindPopup(`${teamIcon} Tu (${currentTeam || 'Sem equipa'})`);
             
-            showNotification(`🚶 Movimento simulado para ${nextCP.name}!`, 'success');
-            
-            // Verificar proximidade
-            setTimeout(() => {
-                checkNearbyCheckpoints();
-            }, 1000);
-        };
-        
-        // Reset do teste
-        window.resetTest = function() {
-            testData.completedCPs = [];
-            testData.currentCP = 0;
-            testData.score = 0;
-            
-            checkpointMarkers.forEach((marker, index) => {
-                marker.setStyle({ 
-                    fillColor: index === 0 ? '#4caf50' : '#bdbdbd' 
-                });
-            });
-            
-            renderCheckpoints();
-            updateUI();
-            
-            showNotification("🔄 Teste reiniciado!", 'info');
-        };
-        
-        // Toggle debug mode
-        window.toggleDebug = function() {
-            debugMode = !debugMode;
-            showNotification(`🔧 Debug mode: ${debugMode ? 'ON' : 'OFF'}`, 'info');
-            
-            if (debugMode) {
-                console.log('Debug Info:', {
-                    userPosition,
-                    checkpoints,
-                    testData,
-                    firebase: isFirebaseEnabled
-                });
-            }
-        };
-        
-        function checkNearbyCheckpoints() {
-            if (!userPosition || checkpoints.length === 0) return;
-            
-            const currentCP = checkpoints[testData.currentCP];
-            if (!currentCP) return;
-            
-            const distance = calculateDistance(
-                userPosition.lat, userPosition.lng,
-                currentCP.lat, currentCP.lng
-            );
-            
-            if (debugMode) {
-                console.log(`Distância para ${currentCP.name}: ${Math.round(distance)}m (limite: ${currentCP.radius}m)`);
+            // Verificar territórios próximos
+            if (gameActive && currentTeam) {
+                checkTerritoryProximity();
             }
             
-            if (distance <= currentCP.radius) {
-                unlockCheckpoint(currentCP.id);
+            // Sync Firebase
+            if (isFirebaseEnabled && currentTeam) {
+                updateTeamPosition();
             }
-            
-            renderCheckpoints();
         }
         
         function calculateDistance(lat1, lng1, lat2, lng2) {
-            const R = 6371000; // Raio da Terra em metros
+            const R = 6371000;
             const dLat = (lat2 - lat1) * Math.PI / 180;
             const dLng = (lng2 - lng1) * Math.PI / 180;
             const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
@@ -851,204 +852,287 @@
             return R * c;
         }
         
-        function unlockCheckpoint(cpId) {
-            const cpElement = document.querySelector(`[data-cp="${cpId}"]`);
-            if (cpElement && !cpElement.classList.contains('available')) {
-                cpElement.classList.remove('next');
-                cpElement.classList.add('available');
+        function checkTerritoryProximity() {
+            if (!userPosition || !currentTeam) return;
+            
+            territories.forEach(territory => {
+                const distance = calculateDistance(
+                    userPosition.lat, userPosition.lng,
+                    territory.lat, territory.lng
+                );
                 
-                const cp = checkpoints.find(c => c.id === cpId);
-                showNotification(`🎯 ${cp.name} desbloqueado! Clica para abrir desafio!`, 'success');
+                const gameTerritory = gameData.territories[territory.id];
                 
-                // Atualizar marcador
-                const cpIndex = checkpoints.findIndex(c => c.id === cpId);
-                if (checkpointMarkers[cpIndex]) {
-                    checkpointMarkers[cpIndex].setStyle({ fillColor: '#ff9800' });
+                if (distance <= territory.radius) {
+                    // Dentro do território
+                    if (gameTerritory.owner !== currentTeam) {
+                        enableTerritoryCapture(territory.id);
+                    }
+                } else {
+                    disableTerritoryCapture(territory.id);
                 }
+            });
+            
+            renderTerritories();
+        }
+        
+        function enableTerritoryCapture(territoryId) {
+            const element = document.querySelector(`[data-territory="${territoryId}"] .capture-button`);
+            const territoryElement = document.querySelector(`[data-territory="${territoryId}"]`);
+            if (element && territoryElement) {
+                element.classList.add('available');
+                territoryElement.classList.add('can-capture');
             }
         }
         
-        function renderCheckpoints() {
-            const container = document.getElementById('checkpointList');
+        function disableTerritoryCapture(territoryId) {
+            const element = document.querySelector(`[data-territory="${territoryId}"] .capture-button`);
+            const territoryElement = document.querySelector(`[data-territory="${territoryId}"]`);
+            if (element && territoryElement) {
+                element.classList.remove('available');
+                territoryElement.classList.remove('can-capture');
+            }
+        }
+        
+        // Simular movimento para testes
+        window.simulateMovement = function() {
+            if (!currentTeam) {
+                showNotification('Seleciona uma equipa primeiro!', 'warning');
+                return;
+            }
+            
+            // Mover para território seguinte
+            const territory = territories[simulationIndex % territories.length];
+            userPosition = {
+                lat: territory.lat,
+                lng: territory.lng,
+                accuracy: 3,
+                timestamp: Date.now()
+            };
+            
+            simulationIndex++;
+            
+            updatePosition();
+            map.setView([userPosition.lat, userPosition.lng], 19);
+            
+            showNotification(`🚶 Movido para ${territory.name}!`, 'success');
+        };
+        
+        window.selectTeam = function(team) {
+            currentTeam = team;
+            document.querySelectorAll('.team-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.team-btn.team-${team.toLowerCase()}`).classList.add('active');
+            
+            showNotification(`Equipa ${team} selecionada!`, 'success');
+            
+            if (userPosition) {
+                updatePosition();
+            }
+        };
+        
+        window.captureTerritory = function(territoryId) {
+            if (!currentTeam || !gameActive) {
+                showNotification('Seleciona equipa e inicia o jogo primeiro!', 'warning');
+                return;
+            }
+            
+            const territory = gameData.territories[territoryId];
+            const oldOwner = territory.owner;
+            
+            territory.owner = currentTeam;
+            territory.controlTime = 0;
+            territory.lastUpdate = Date.now();
+            
+            // Atualizar marcador no mapa
+            const mapMarker = territoryMarkers.find(tm => tm.territory.id === territoryId);
+            if (mapMarker) {
+                const teamColor = gameData.teams[currentTeam].color;
+                mapMarker.marker.setStyle({ fillColor: teamColor });
+                mapMarker.captureArea.setStyle({ 
+                    fillColor: teamColor,
+                    color: teamColor 
+                });
+            }
+            
+            // Notificações
+            if (oldOwner && oldOwner !== currentTeam) {
+                showNotification(`⚔️ Território roubado da Equipa ${oldOwner}!`, 'battle');
+            } else {
+                showNotification(`🏰 ${territory.name} capturado!`, 'success');
+            }
+            
+            if (isFirebaseEnabled) {
+                syncGameState();
+            }
+            
+            renderTerritories();
+            updateUI();
+        };
+        
+        window.startGame = function() {
+            if (!currentTeam) {
+                showNotification('Seleciona uma equipa primeiro!', 'warning');
+                return;
+            }
+            
+            gameActive = true;
+            gameData.gameStarted = true;
+            gameData.startTime = Date.now();
+            
+            startPointsGeneration();
+            showNotification('🚀 Jogo de teste iniciado!', 'success');
+            
+            if (isFirebaseEnabled) {
+                syncGameState();
+            }
+        };
+        
+        window.pauseGame = function() {
+            gameActive = false;
+            if (pointsInterval) {
+                clearInterval(pointsInterval);
+            }
+            showNotification('⏸️ Jogo pausado', 'warning');
+        };
+        
+        window.resetGame = function() {
+            gameActive = false;
+            if (pointsInterval) {
+                clearInterval(pointsInterval);
+            }
+            
+            Object.keys(gameData.teams).forEach(team => {
+                gameData.teams[team].score = 0;
+            });
+            
+            Object.keys(gameData.territories).forEach(terrId => {
+                gameData.territories[terrId].owner = null;
+                gameData.territories[terrId].controlTime = 0;
+            });
+            
+            // Reset marcadores
+            territoryMarkers.forEach(tm => {
+                let color = '#bdbdbd';
+                if (tm.territory.type === 'central') color = '#4caf50';
+                else if (tm.territory.type === 'intermediate') color = '#ff9800';
+                else if (tm.territory.type === 'remote') color = '#f44336';
+                else if (tm.territory.type === 'legendary') color = '#9c27b0';
+                
+                tm.marker.setStyle({ fillColor: color });
+                tm.captureArea.setStyle({ fillColor: color, color: color });
+            });
+            
+            renderTerritories();
+            updateUI();
+            showNotification('🔄 Teste reiniciado!', 'success');
+            
+            if (isFirebaseEnabled) {
+                syncGameState();
+            }
+        };
+        
+        function startPointsGeneration() {
+            if (pointsInterval) {
+                clearInterval(pointsInterval);
+            }
+            
+            // Para teste, gerar pontos a cada 10 segundos (em vez de 1 minuto)
+            pointsInterval = setInterval(() => {
+                if (!gameActive) return;
+                
+                Object.values(gameData.territories).forEach(territory => {
+                    if (territory.owner) {
+                        // Para teste: dividir por 6 (10 segundos vs 60 segundos)
+                        gameData.teams[territory.owner].score += Math.round(territory.pointsPerMinute / 6);
+                        territory.controlTime += 1;
+                    }
+                });
+                
+                updateUI();
+                
+                if (isFirebaseEnabled) {
+                    syncGameState();
+                }
+            }, 10000); // 10 segundos para teste
+        }
+        
+        function renderTerritories() {
+            const container = document.getElementById('territoriesList');
             container.innerHTML = '';
             
-            checkpoints.forEach((cp, index) => {
+            territories.forEach(territory => {
+                const gameTerritory = gameData.territories[territory.id];
                 const div = document.createElement('div');
-                div.className = 'checkpoint';
-                div.setAttribute('data-cp', cp.id);
+                div.className = 'territory';
+                div.setAttribute('data-territory', territory.id);
                 
-                let status = 'locked';
-                let statusIcon = '🔒';
-                let distance = '';
+                let ownerClass = 'neutral';
+                let ownerText = 'Neutro';
+                let ownerStyle = 'background: #bdbdbd;';
                 
-                if (testData.completedCPs.includes(cp.id)) {
-                    status = 'completed';
-                    statusIcon = '✅';
-                } else if (index === testData.currentCP) {
-                    if (userPosition) {
-                        const dist = calculateDistance(userPosition.lat, userPosition.lng, cp.lat, cp.lng);
-                        distance = `${Math.round(dist)}m`;
-                        
-                        if (dist <= cp.radius) {
-                            status = 'available';
-                            statusIcon = '🎯';
-                            div.onclick = () => openChallenge(cp.id);
-                        } else {
-                            status = 'next';
-                            statusIcon = '📍';
-                        }
-                    } else {
-                        status = 'next';
-                        statusIcon = '📍';
-                    }
+                if (gameTerritory.owner) {
+                    ownerClass = `team-${gameTerritory.owner.toLowerCase()}`;
+                    ownerText = `Equipa ${gameTerritory.owner}`;
+                    ownerStyle = `background: ${gameData.teams[gameTerritory.owner].color};`;
                 }
                 
-                div.className += ` ${status}`;
+                div.className += ` ${ownerClass}`;
+                
+                let distance = '';
+                if (userPosition) {
+                    const dist = calculateDistance(
+                        userPosition.lat, userPosition.lng,
+                        territory.lat, territory.lng
+                    );
+                    distance = Math.round(dist);
+                }
+                
                 div.innerHTML = `
-                    <div class="checkpoint-header">
-                        <div class="checkpoint-name">${cp.name}</div>
-                        <div class="checkpoint-status">${statusIcon}</div>
+                    <div class="territory-header">
+                        <div class="territory-name">${territory.name}</div>
+                        <div class="territory-owner" style="${ownerStyle}">${ownerText}</div>
                     </div>
-                    <div class="checkpoint-details">${cp.description}</div>
-                    <div class="checkpoint-distance">
-                        ${cp.points} pontos ${distance}
+                    <div class="territory-info">
+                        <div class="info-item">
+                            <span class="info-value">${territory.pointsPerMinute}</span>
+                            <span class="info-label">pts/min</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-value">${'★'.repeat(territory.difficulty)}</span>
+                            <span class="info-label">dificuldade</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-value">${distance || '?'}m</span>
+                            <span class="info-label">distância</span>
+                        </div>
                     </div>
+                    <p style="color: #666; margin-bottom: 8px; font-size: 0.9em;">${territory.description}</p>
+                    <button class="capture-button" onclick="captureTerritory('${territory.id}')">
+                        🏰 Capturar
+                    </button>
                 `;
                 
                 container.appendChild(div);
             });
         }
         
-        function openChallenge(cpId) {
-            const cp = checkpoints.find(c => c.id === cpId);
-            if (!cp) return;
-            
-            const modal = document.getElementById('challengeModal');
-            const content = document.getElementById('challengeContent');
-            
-            let challengeHTML = `
-                <h2 class="challenge-title">${cp.challenge.title}</h2>
-                <p style="margin-bottom: 20px;">${cp.challenge.description}</p>
-            `;
-            
-            if (cp.challengeType === 'photo' || cp.challengeType === 'final') {
-                challengeHTML += `
-                    <div style="margin: 20px 0;">
-                        <button class="btn btn-info" onclick="fakePhoto()">
-                            📸 Simular Foto
-                        </button>
-                        <p style="margin-top: 10px; font-size: 0.9em; color: #666;">
-                            ${cp.challenge.instruction}
-                        </p>
-                    </div>
-                `;
-            } else if (cp.challengeType === 'quiz') {
-                challengeHTML += `
-                    <div class="quiz-challenge">
-                        <h4 style="margin: 20px 0;">${cp.challenge.description}</h4>
-                        <div id="quizOptions">
-                            ${cp.challenge.options.map((option, index) => 
-                                `<button class="btn" style="width: 100%; margin: 5px 0; background: #f5f5f5; color: #333;" 
-                                        onclick="selectQuizOption(${index}, ${cp.challenge.correct})" data-index="${index}">
-                                    ${option}
-                                </button>`
-                            ).join('')}
-                        </div>
-                        <div id="quizResult" style="margin-top: 15px; display: none;"></div>
-                    </div>
-                `;
-            }
-            
-            challengeHTML += `
-                <div style="margin-top: 20px;">
-                    <button class="btn btn-primary" onclick="completeChallenge('${cpId}')">
-                        Completar (+${cp.points} pts)
-                    </button>
-                    <button class="btn btn-secondary" onclick="closeChallenge()">
-                        Fechar
-                    </button>
-                </div>
-            `;
-            
-            content.innerHTML = challengeHTML;
-            modal.style.display = 'flex';
-        }
-        
-        window.fakePhoto = function() {
-            showNotification("📸 Foto simulada tirada!", 'success');
-        };
-        
-        window.selectQuizOption = function(selectedIndex, correctIndex) {
-            const buttons = document.querySelectorAll('#quizOptions .btn');
-            buttons.forEach((btn, index) => {
-                btn.style.background = index === correctIndex ? '#4caf50' : 
-                                     index === selectedIndex ? '#f44336' : '#f5f5f5';
-                btn.style.color = index === correctIndex || index === selectedIndex ? 'white' : '#333';
-            });
-            
-            const result = document.getElementById('quizResult');
-            result.style.display = 'block';
-            result.innerHTML = selectedIndex === correctIndex ? 
-                '✅ Correto! Muito bem!' : '❌ Incorreto, mas ganhas pontos!';
-        };
-        
-        window.completeChallenge = function(cpId) {
-            const cp = checkpoints.find(c => c.id === cpId);
-            if (!cp) return;
-            
-            // Adicionar aos completados
-            testData.completedCPs.push(cpId);
-            testData.score += cp.points;
-            testData.currentCP++;
-            
-            // Atualizar marcador
-            const cpIndex = checkpoints.findIndex(c => c.id === cpId);
-            if (checkpointMarkers[cpIndex]) {
-                checkpointMarkers[cpIndex].setStyle({ fillColor: '#2196f3' });
-            }
-            
-            // Próximo marcador
-            if (testData.currentCP < checkpoints.length && checkpointMarkers[testData.currentCP]) {
-                checkpointMarkers[testData.currentCP].setStyle({ fillColor: '#4caf50' });
-            }
-            
-            showNotification(`🎉 +${cp.points} pontos! ${cp.name} completado!`, 'success');
-            
-            if (testData.currentCP >= checkpoints.length) {
-                setTimeout(() => {
-                    showNotification("🏆 Teste completo! Sistema funcionou perfeitamente!", 'success');
-                }, 1000);
-            }
-            
-            // Sync com Firebase
-            if (isFirebaseEnabled) {
-                const testRef = ref(db, 'raid/test/data');
-                set(testRef, testData);
-            }
-            
-            updateUI();
-            renderCheckpoints();
-            closeChallenge();
-        };
-        
-        window.closeChallenge = function() {
-            document.getElementById('challengeModal').style.display = 'none';
-        };
-        
         function updateUI() {
-            document.getElementById('teamScore').textContent = testData.score;
-            document.getElementById('completedCPs').textContent = `${testData.completedCPs.length}/${checkpoints.length}`;
+            if (!currentTeam) return;
             
-            const progress = checkpoints.length > 0 ? (testData.completedCPs.length / checkpoints.length) * 100 : 0;
-            document.getElementById('progressFill').style.width = `${progress}%`;
+            document.getElementById('teamScore').textContent = gameData.teams[currentTeam].score;
             
-            if (testData.completedCPs.length === checkpoints.length && checkpoints.length > 0) {
-                document.getElementById('teamStatus').textContent = 'Completo!';
-            } else if (checkpoints.length > 0) {
-                document.getElementById('teamStatus').textContent = 'Ativo';
-            } else {
-                document.getElementById('teamStatus').textContent = 'Aguarda';
-            }
+            const ownedTerritories = Object.values(gameData.territories)
+                .filter(t => t.owner === currentTeam).length;
+            document.getElementById('territoriesOwned').textContent = ownedTerritories;
+            
+            const pointsPerMin = Object.values(gameData.territories)
+                .filter(t => t.owner === currentTeam)
+                .reduce((sum, t) => sum + t.pointsPerMinute, 0);
+            document.getElementById('pointsPerMin').textContent = pointsPerMin;
+            
+            document.getElementById('scoreA').textContent = `${gameData.teams.A.score} pts`;
+            document.getElementById('scoreB').textContent = `${gameData.teams.B.score} pts`;
+            document.getElementById('scoreC').textContent = `${gameData.teams.C.score} pts`;
         }
         
         function showNotification(message, type = 'success') {
@@ -1059,13 +1143,51 @@
             
             setTimeout(() => {
                 notification.style.display = 'none';
-            }, 4000);
+            }, 3000);
+        }
+        
+        function syncGameState() {
+            if (!isFirebaseEnabled || !db) return;
+            
+            const gameRef = ref(db, 'raid/domination');
+            set(gameRef, {
+                ...gameData,
+                lastUpdate: serverTimestamp()
+            });
+        }
+        
+        function updateTeamPosition() {
+            if (!isFirebaseEnabled || !db || !userPosition || !currentTeam) return;
+            
+            const positionRef = ref(db, `raid/domination/positions/${currentTeam}`);
+            set(positionRef, {
+                lat: userPosition.lat,
+                lng: userPosition.lng,
+                timestamp: serverTimestamp()
+            });
+        }
+        
+        function listenForUpdates() {
+            if (!isFirebaseEnabled || !db) return;
+            
+            const gameRef = ref(db, 'raid/domination');
+            onValue(gameRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    Object.assign(gameData, data);
+                    renderTerritories();
+                    updateUI();
+                }
+            });
         }
         
         // Cleanup
         window.addEventListener('beforeunload', function() {
             if (watchId) {
                 navigator.geolocation.clearWatch(watchId);
+            }
+            if (pointsInterval) {
+                clearInterval(pointsInterval);
             }
         });
     </script>
