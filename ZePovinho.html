@@ -745,6 +745,8 @@
         function checkTerritoryProximity() {
             if (!userPosition) return;
             
+            let nearbyTerritories = [];
+            
             Object.values(gameData.territories).forEach(territory => {
                 if (!territory.lat || !territory.lng) return;
                 
@@ -753,11 +755,19 @@
                     territory.lat, territory.lng
                 );
                 
+                console.log(`📍 Distância até ${territory.name}: ${Math.round(distance)}m (raio: ${territory.radius}m)`);
+                
                 if (distance <= territory.radius) {
+                    console.log(`✅ DENTRO da zona ${territory.name}!`);
+                    nearbyTerritories.push(territory.name);
+                    
                     // Dentro do território
                     if (territory.owner !== currentTeam) {
                         // Pode capturar
                         enableTerritoryCapture(territory.id);
+                        console.log(`🎯 Pode capturar ${territory.name}`);
+                    } else {
+                        console.log(`👑 Já controlamos ${territory.name}`);
                     }
                 } else {
                     // Fora do território
@@ -765,13 +775,23 @@
                 }
             });
             
+            // Mostrar notificação se entrou numa zona
+            if (nearbyTerritories.length > 0) {
+                showNotification(`📍 Dentro de: ${nearbyTerritories.join(', ')}`, 'success');
+            }
+            
             renderTerritories();
+            updateDebugInfo();
         }
         
         function enableTerritoryCapture(territoryId) {
             const element = document.querySelector(`[data-territory="${territoryId}"] .capture-button`);
             if (element) {
                 element.classList.add('available');
+                element.style.display = 'block';
+                console.log(`🟢 Botão de captura ativado para ${territoryId}`);
+            } else {
+                console.warn(`❌ Elemento de captura não encontrado para ${territoryId}`);
             }
         }
         
@@ -779,6 +799,8 @@
             const element = document.querySelector(`[data-territory="${territoryId}"] .capture-button`);
             if (element) {
                 element.classList.remove('available');
+                element.style.display = 'none';
+                console.log(`🔴 Botão de captura desativado para ${territoryId}`);
             }
         }
         
@@ -808,23 +830,51 @@
         }
         
         window.captureTerritory = function(territoryId) {
+            console.log(`🎯 Tentativa de captura: ${territoryId}`);
+            
             if (!gameActive) {
-                showNotification('O jogo ainda não começou!', 'warning');
+                showNotification('⚠️ O jogo ainda não começou!', 'warning');
                 return;
             }
             
             const territory = gameData.territories[territoryId];
             if (!territory) {
-                console.error("Território não encontrado:", territoryId);
+                console.error("❌ Território não encontrado:", territoryId);
+                showNotification('Erro: Território não encontrado', 'error');
+                return;
+            }
+            
+            // Verificar se está realmente perto
+            if (!userPosition) {
+                showNotification('❌ GPS não disponível', 'error');
+                return;
+            }
+            
+            const distance = calculateDistance(
+                userPosition.lat, userPosition.lng,
+                territory.lat, territory.lng
+            );
+            
+            console.log(`📏 Distância atual: ${Math.round(distance)}m, raio permitido: ${territory.radius}m`);
+            
+            if (distance > territory.radius) {
+                showNotification(`❌ Muito longe! Precisa estar a menos de ${territory.radius}m`, 'error');
                 return;
             }
             
             const oldOwner = territory.owner;
+            console.log(`📋 Proprietário anterior: ${oldOwner}, novo: ${currentTeam}`);
             
-            // Capturar território
+            // Capturar território localmente primeiro
             territory.owner = currentTeam;
             territory.controlTime = 0;
             territory.lastUpdate = Date.now();
+            
+            // Sync Firebase
+            if (isFirebaseEnabled) {
+                console.log(`🔄 Sincronizando ${territoryId} com Firebase...`);
+                syncTerritoryCapture(territoryId);
+            }
             
             // Atualizar marcador no mapa
             updateMapMarkers();
@@ -832,14 +882,11 @@
             // Notificações
             if (oldOwner && oldOwner !== currentTeam) {
                 const oldTeamName = gameData.teams[oldOwner].name;
-                showNotification(`⚔️ Território roubado da ${oldTeamName}!`, 'battle');
+                showNotification(`⚔️ Território capturado da ${oldTeamName}!`, 'battle');
+            } else if (!oldOwner) {
+                showNotification(`🏰 ${territory.name} capturado!`, 'success');
             } else {
-                showNotification(`🏰 Território capturado!`, 'success');
-            }
-            
-            // Sync Firebase
-            if (isFirebaseEnabled) {
-                syncTerritoryCapture(territoryId);
+                showNotification(`✅ ${territory.name} já era nosso!`, 'success');
             }
             
             renderTerritories();
