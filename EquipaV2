@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Territory Domination - Team Blue</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🛡️</text></svg>">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        
+        /* Team color variables - easily changeable */
+        :root {
+            --primary-color: #2196f3;
+            --primary-dark: #1976d2;
+            --team-icon: '🛡️';
+        }
+        
+        .container {
+            max-width: 430px;
+            margin: 0 auto;
+            background: white;
+            color: #333;
+            min-height: 100vh;
+            position: relative;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .header h1 {
+            font-size: 1.4em;
+            margin-bottom: 5px;
+        }
+        
+        .team-badge {
+            background: rgba(255,255,255,0.2);
+            border-radius: 15px;
+            padding: 15px;
+            margin-top: 15px;
+            border: 2px solid rgba(255,255,255,0.3);
+        }
+        
+        .team-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .game-stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .stat {
+            text-align: center;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 12px;
+        }
+        
+        .stat-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            display: block;
+        }
+        
+        .stat-label {
+            font-size: 0.8em;
+            opacity: 0.9;
+        }
+        
+        .battle-mode {
+            background: #ff5722;
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-weight: bold;
+            animation: pulse 2s infinite;
+            display: none;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+        
+        .status-section {
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        
+        .gps-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 15px;
+            padding: 12px;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .gps-indicator {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #f44336;
+            animation: pulse 2s infinite;
+        }
+        
+        .gps-indicator.active {
+            background: #4caf50;
+        }
+        
+        .map-container {
+            height: 400px;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .map-container.fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            margin: 0;
+            border-radius: 0;
+            height: 100vh;
+            z-index: 2000;
+        }
+        
+        .map-legend {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(255,255,255,0.95);
+            border-radius: 10px;
+            padding: 12px;
+            z-index: 1000;
+            font-size: 0.8em;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 4px 0;
+        }
+        
+        .legend-color {
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+        
+        .map-controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .map-control-btn {
+            background: rgba(255,255,255,0.95);
+            border: none;
+            border-radius: 8px;
+            padding: 12px;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+            font-size: 1.2em;
+            transition: all 0.2s ease;
+        }
+        
+        .map-control-btn:hover {
+            background: white;
+            transform: scale(1.05);
+        }
+        
+        .territories-section {
+            padding: 0 20px 20px;
+        }
+        
+        .territory {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .territory.neutral {
+            border-color: #bdbdbd;
+            background: linear-gradient(135deg, #fff 0%, #f5f5f5 100%);
+        }
+        
+        .territory.team-a {
+            border-color: #f44336;
+            background: linear-gradient(135deg, #fff 0%, #ffebee 100%);
+        }
+        
+        .territory.team-b {
+            border-color: #2196f3;
+            background: linear-gradient(135deg, #fff 0%, #e3f2fd 100%);
+        }
+        
+        .territory.team-c {
+            border-color: #ff9800;
+            background: linear-gradient(135deg, #fff 0%, #fff3e0 100%);
+        }
+        
+        .territory.contested {
+            border-color: #ff5722;
+            background: linear-gradient(135deg, #fff 0%, #fbe9e7 100%);
+            animation: shake 0.5s infinite;
+        }
+        
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-2px); }
+            50% { transform: translateX(2px); }
+            75% { transform: translateX(-2px); }
+            100% { transform: translateX(0); }
+        }
+        
+        .territory-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .territory-name {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: var(--primary-color);
+        }
+        
+        .territory-owner {
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .territory-info {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .info-item {
+            text-align: center;
+            background: rgba(33, 150, 243, 0.1);
+            padding: 8px;
+            border-radius: 8px;
+        }
+        
+        .info-value {
+            font-weight: bold;
+            color: var(--primary-color);
+            display: block;
+        }
+        
+        .info-label {
+            font-size: 0.8em;
+            color: #666;
+        }
+        
+        .territory-progress {
+            background: #e0e0e0;
+            border-radius: 10px;
+            height: 8px;
+            overflow: hidden;
+            margin-bottom: 10px;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            transition: width 1s ease;
+            border-radius: 10px;
+        }
+        
+        .progress-fill.team-a { background: #f44336; }
+        .progress-fill.team-b { background: #2196f3; }
+        .progress-fill.team-c { background: #ff9800; }
+        .progress-fill.neutral { background: #bdbdbd; }
+        
+        .capture-button {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 12px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.1em;
+            display: none;
+        }
+        
+        .capture-button.available {
+            display: block;
+            background: var(--primary-color);
+            color: white;
+            animation: glow 2s infinite;
+        }
+        
+        @keyframes glow {
+            0% { box-shadow: 0 0 5px rgba(33, 150, 243, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(33, 150, 243, 0.8); }
+            100% { box-shadow: 0 0 5px rgba(33, 150, 243, 0.5); }
+        }
+        
+        .floating-notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #4caf50;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            z-index: 2001;
+            display: none;
+            animation: slideIn 0.5s ease;
+        }
+        
+        .floating-notification.error {
+            background: #f44336;
+        }
+        
+        .floating-notification.warning {
+            background: #ff9800;
+        }
+        
+        .floating-notification.battle {
+            background: #ff5722;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(-50%) translateY(-100%); }
+            to { transform: translateX(-50%) translateY(0); }
+        }
+        
+        .leaderboard {
+            background: white;
+            margin: 20px;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+        
+        .leaderboard h3 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+        
+        .team-score {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            margin: 8px 0;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+        
+        .team-score.team-a { 
+            background: rgba(244, 67, 54, 0.1);
+            border: 2px solid transparent;
+        }
+        .team-score.team-b { 
+            background: rgba(33, 150, 243, 0.15);
+            border: 2px solid var(--primary-color);
+        }
+        .team-score.team-c { 
+            background: rgba(255, 152, 0, 0.1);
+            border: 2px solid transparent;
+        }
+        
+        .connection-status {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 0.8em;
+            text-align: center;
+        }
+        
+        .connection-status.connected {
+            background: rgba(76, 175, 80, 0.2);
+        }
+        
+        .connection-status.disconnected {
+            background: rgba(244, 67, 54, 0.2);
+        }
+
+        .debug-info {
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 0.7em;
+            text-align: left;
+            font-family: monospace;
+            display: none;
+        }
+
+        /* Hide scrollbar when map is fullscreen */
+        body.map-fullscreen {
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏰 TERRITORY DOMINATION</h1>
+            <p id="gameLocation">Monte do Paio • Real-Time Battle</p>
+            
+            <div class="team-badge">
+                <div class="team-name" id="teamName">Team Blue</div>
+                <p style="font-size: 0.9em; opacity: 0.9;" id="teamMotto">Strategy, Courage and Unity</p>
+            </div>
+            
+            <div class="game-stats">
+                <div class="stat">
+                    <span class="stat-value" id="teamScore">0</span>
+                    <span class="stat-label">Points</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="territoriesOwned">0</span>
+                    <span class="stat-label">Territories</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="pointsPerMin">0</span>
+                    <span class="stat-label">Pts/min</span>
+                </div>
+            </div>
+            
+            <div class="connection-status" id="connectionStatus">
+                🔄 Connecting to game...
+            </div>
+
+            <div class="debug-info" id="debugInfo">
+                Debug Info:<br>
+                Firebase: <span id="debugFirebase">?</span><br>
+                Game Active: <span id="debugGameActive">?</span><br>
+                Territories: <span id="debugTerritories">?</span><br>
+                Last Update: <span id="debugLastUpdate">?</span>
+            </div>
+        </div>
+        
+        <div class="battle-mode" id="battleMode">
+            ⚔️ BATTLE MODE ACTIVE! Territory under dispute!
+        </div>
+        
+        <div class="status-section">
+            <div class="gps-status">
+                <div class="gps-indicator" id="gpsIndicator"></div>
+                <div>
+                    <strong id="gpsStatus">Activating GPS...</strong>
+                    <div id="gpsCoords" style="font-size: 0.8em; color: #666;"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="map-container" id="mapContainer">
+            <div class="map-legend">
+                <strong>🗺️ Territory Map</strong>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #f44336;"></div>
+                    <span id="teamAName">Team Red</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #2196f3;"></div>
+                    <span id="teamBName">Team Blue</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #ff9800;"></div>
+                    <span id="teamCName">Team Orange</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background: #bdbdbd;"></div>
+                    <span>Neutral</span>
+                </div>
+            </div>
+            
+            <div class="map-controls">
+                <button class="map-control-btn" id="fullscreenBtn" title="Toggle Fullscreen">
+                    📺
+                </button>
+                <button class="map-control-btn" id="centerBtn" title="Center on Player">
+                    🎯
+                </button>
+            </div>
+            
+            <div id="map" style="height: 100%;"></div>
+        </div>
+        
+        <div class="leaderboard">
+            <h3>🏆 Current Leaderboard</h3>
+            <div class="team-score team-a">
+                <span>🔴 <span id="scoreTeamAName">Team Red</span></span>
+                <span id="scoreA">0 pts</span>
+            </div>
+            <div class="team-score team-b">
+                <span>🔵 <span id="scoreTeamBName">Team Blue</span></span>
+                <span id="scoreB">0 pts</span>
+            </div>
+            <div class="team-score team-c">
+                <span>🟠 <span id="scoreTeamCName">Team Orange</span></span>
+                <span id="scoreC">0 pts</span>
+            </div>
+        </div>
+        
+        <div class="territories-section">
+            <h3 style="text-align: center; color: var(--primary-color); margin-bottom: 20px;">
+                🏰 Battle Territories
+            </h3>
+            <div id="territoriesList"></div>
+        </div>
+    </div>
+    
+    <!-- Notification -->
+    <div class="floating-notification" id="floatingNotification"></div>
+    
+    <!-- Firebase and Leaflet -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module">
+        // TEAM CONFIGURATION - Change these values to create pages for different teams
+        const TEAM_CONFIG = {
+            currentTeam: 'B', // A, B, or C
+            teams: {
+                A: { name: 'Team Da Vinci', color: '#f44336', icon: '🔴' },
+                B: { name: 'Team Zé Povinho', color: '#2196f3', icon: '🔵' },
+                C: { name: 'Team Salgueiro Maio', color: '#ff9800', icon: '🟠' }
+            },
+            gameLocation: 'Monte do Paio • Real-Time Battle',
+            teamMotto: 'Strategy, Courage and Unity'
+        };
+
+        // Firebase Configuration
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, onValue, set, push, serverTimestamp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyDMQNN57N8v2WJaIL_sbQEptMhVD0_96M4",
+            authDomain: "raid-pioneiros-2025.firebaseapp.com",
+            databaseURL: "https://raid-pioneiros-2025-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "raid-pioneiros-2025",
+            storageBucket: "raid-pioneiros-2025.firebasestorage.app",
+            messagingSenderId: "364137677559",
+            appId: "1:364137677559:web:2be68cd6dcd6ccbf5ac9f2"
+        };
+        
+        // Game State
+        let db = null;
+        let isFirebaseEnabled = false;
+        let map = null;
+        let watchId = null;
+        let userPosition = null;
+        const currentTeam = TEAM_CONFIG.currentTeam;
+        let gameActive = false;
+        let territoryMarkers = [];
+        let userMarker = null;
+        let debugMode = false;
+        let isMapFullscreen = false;
+        
+        const gameData = {
+            teams: {
+                A: { score: 0, color: TEAM_CONFIG.teams.A.color, name: TEAM_CONFIG.teams.A.name },
+                B: { score: 0, color: TEAM_CONFIG.teams.B.color, name: TEAM_CONFIG.teams.B.name },
+                C: { score: 0, color: TEAM_CONFIG.teams.C.color, name: TEAM_CONFIG.teams.C.name }
+            },
+            territories: {},
+            gameStarted: false,
+            startTime: null
+        };
+        
+        // Initialize UI with team configuration
+        function initializeTeamUI() {
+            // Update CSS variables
+            document.documentElement.style.setProperty('--primary-color', TEAM_CONFIG.teams[currentTeam].color);
+            document.documentElement.style.setProperty('--primary-dark', TEAM_CONFIG.teams[currentTeam].color + 'dd');
+            
+            // Update team names in UI
+            document.getElementById('teamName').textContent = TEAM_CONFIG.teams[currentTeam].name;
+            document.getElementById('teamMotto').textContent = TEAM_CONFIG.teamMotto;
+            document.getElementById('gameLocation').textContent = TEAM_CONFIG.gameLocation;
+            
+            // Update legend
+            document.getElementById('teamAName').textContent = TEAM_CONFIG.teams.A.name;
+            document.getElementById('teamBName').textContent = TEAM_CONFIG.teams.B.name;
+            document.getElementById('teamCName').textContent = TEAM_CONFIG.teams.C.name;
+            
+            // Update leaderboard
+            document.getElementById('scoreTeamAName').textContent = TEAM_CONFIG.teams.A.name;
+            document.getElementById('scoreTeamBName').textContent = TEAM_CONFIG.teams.B.name;
+            document.getElementById('scoreTeamCName').textContent = TEAM_CONFIG.teams.C.name;
+            
+            // Update page title
+            document.title = `Territory Domination - ${TEAM_CONFIG.teams[currentTeam].name}`;
+        }
+        
+        // Map fullscreen functionality
+        function toggleMapFullscreen() {
+            const mapContainer = document.getElementById('mapContainer');
+            const fullscreenBtn = document.getElementById('fullscreenBtn');
+            
+            isMapFullscreen = !isMapFullscreen;
+            
+            if (isMapFullscreen) {
+                mapContainer.classList.add('fullscreen');
+                document.body.classList.add('map-fullscreen');
+                fullscreenBtn.textContent = '📱';
+                fullscreenBtn.title = 'Exit Fullscreen';
+            } else {
+                mapContainer.classList.remove('fullscreen');
+                document.body.classList.remove('map-fullscreen');
+                fullscreenBtn.textContent = '📺';
+                fullscreenBtn.title = 'Toggle Fullscreen';
+            }
+            
+            // Invalidate map size after transition
+            setTimeout(() => {
+                if (map) map.invalidateSize();
+            }, 300);
+        }
+        
+        function centerMapOnPlayer() {
+            if (map && userPosition) {
+                map.setView([userPosition.lat, userPosition.lng], 16);
+                showNotification('🎯 Centered on your location', 'success');
+            } else {
+                showNotification('❌ GPS location not available', 'error');
+            }
+        }
+        
+        // Debug toggle (click header 5 times)
+        let headerClicks = 0;
+        document.querySelector('.header h1').addEventListener('click', function() {
+            headerClicks++;
+            if (headerClicks >= 5) {
+                debugMode = !debugMode;
+                document.getElementById('debugInfo').style.display = debugMode ? 'block' : 'none';
+                headerClicks = 0;
+                showNotification(debugMode ? '🐛 Debug enabled' : '🐛 Debug disabled', 'success');
+            }
+        });
+        
+        // Event listeners
+        document.getElementById('fullscreenBtn').addEventListener('click', toggleMapFullscreen);
+        document.getElementById('centerBtn').addEventListener('click', centerMapOnPlayer);
+        
+        // Escape key to exit fullscreen
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape' && isMapFullscreen) {
+                toggleMapFullscreen();
+            }
+        });
+        
+        // Initialization
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log(`🚀 Starting ${TEAM_CONFIG.teams[currentTeam].name} application`);
+            initializeTeamUI();
+            initFirebase();
+            initMap();
+            initGPS();
+            loadTerritories();
+            updateUI();
+            updateDebugInfo();
+        });
+        
+        function initFirebase() {
+            try {
+                const app = initializeApp(firebaseConfig);
+                db = getDatabase(app);
+                isFirebaseEnabled = true;
+                document.getElementById('connectionStatus').textContent = '🟢 Connected to game';
+                document.getElementById('connectionStatus').className = 'connection-status connected';
+                console.log("🔥 Firebase connected!");
+                listenForUpdates();
+                updateDebugInfo();
+            } catch (error) {
+                console.error("❌ Firebase error:", error);
+                document.getElementById('connectionStatus').textContent = '🔴 Connection error - Offline mode';
+                document.getElementById('connectionStatus').className = 'connection-status disconnected';
+                loadSampleData();
+                updateDebugInfo();
+            }
+        }
+        
+        function loadSampleData() {
+            console.log("📦 Loading sample data for offline testing");
+            gameData.territories = {
+                'base_camp': {
+                    id: 'base_camp',
+                    name: 'Base Camp',
+                    description: 'Main technical camp',
+                    lat: 38.0658,
+                    lng: -8.7734,
+                    radius: 80,
+                    pointsPerMinute: 2,
+                    difficulty: 1,
+                    type: 'central',
+                    owner: null,
+                    controlTime: 0,
+                    lastUpdate: null
+                },
+                'visitor_center': {
+                    id: 'visitor_center',
+                    name: 'Visitor Center',
+                    description: 'Information center',
+                    lat: 38.0620,
+                    lng: -8.7700,
+                    radius: 60,
+                    pointsPerMinute: 3,
+                    difficulty: 1,
+                    type: 'central',
+                    owner: 'A',
+                    controlTime: 0,
+                    lastUpdate: Date.now()
+                },
+                'lagoon_viewpoint': {
+                    id: 'lagoon_viewpoint',
+                    name: 'Lagoon Viewpoint',
+                    description: 'Panoramic viewpoint',
+                    lat: 38.0500,
+                    lng: -8.7600,
+                    radius: 50,
+                    pointsPerMinute: 5,
+                    difficulty: 2,
+                    type: 'intermediate',
+                    owner: 'B',
+                    controlTime: 0,
+                    lastUpdate: Date.now()
+                }
+            };
+            
+            gameData.teams.A.score = 150;
+            gameData.teams.B.score = 200;
+            gameData.teams.C.score = 100;
+            
+            renderTerritories();
+            updateMapMarkers();
+            updateUI();
+        }
+        
+        function initMap() {
+            console.log("🗺️ Initializing map");
+            map = L.map('map').setView([38.0658, -8.7734], 14);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 250);
+        }
+        
+        function initGPS() {
+            if (!navigator.geolocation) {
+                showNotification('GPS not available on this device', 'error');
+                return;
+            }
+            
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 30000
+            };
+            
+            watchId = navigator.geolocation.watchPosition(
+                updatePosition,
+                handleGPSError,
+                options
+            );
+        }
+        
+        function updatePosition(position) {
+            userPosition = {
+                lat: position.coords.latitude,
+                lng: position.coords.longitude,
+                accuracy: position.coords.accuracy,
+                timestamp: Date.now()
+            };
+            
+            document.getElementById('gpsIndicator').classList.add('active');
+            document.getElementById('gpsStatus').textContent = 'GPS Active';
+            document.getElementById('gpsCoords').textContent = 
+                `${userPosition.lat.toFixed(5)}, ${userPosition.lng.toFixed(5)} (±${Math.round(userPosition.accuracy)}m)`;
+            
+            if (userMarker) {
+                map.removeLayer(userMarker);
+            }
+            
+            userMarker = L.marker([userPosition.lat, userPosition.lng], {
+                icon: L.divIcon({
+                    className: 'user-marker',
+                    html: `<div style="background: ${TEAM_CONFIG.teams[currentTeam].color}; color: white; border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; border: 3px solid white; box-shadow: 0 2px 6px rgba(0,0,0,0.3);">${TEAM_CONFIG.teams[currentTeam].icon}</div>`,
+                    iconSize: [26, 26]
+                })
+            }).addTo(map);
+            
+            if (gameActive) {
+                checkTerritoryProximity();
+            }
+            
+            if (isFirebaseEnabled) {
+                updateTeamPosition();
+            }
+
+            updateDebugInfo();
+        }
+        
+        function handleGPSError(error) {
+            console.error('❌ GPS Error:', error);
+            let errorMsg = 'Error getting location';
+            
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMsg = 'GPS denied by user';
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMsg = 'Location unavailable';
+                    break;
+                case error.TIMEOUT:
+                    errorMsg = 'GPS timeout';
+                    break;
+            }
+            
+            document.getElementById('gpsStatus').textContent = errorMsg;
+            showNotification(errorMsg, 'error');
+        }
+        
+        function calculateDistance(lat1, lng1, lat2, lng2) {
+            const R = 6371000;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLng = (lng2 - lng1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                     Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                     Math.sin(dLng/2) * Math.sin(dLng/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+        
+        function checkTerritoryProximity() {
+            if (!userPosition) return;
+            
+            let nearbyTerritories = [];
+            
+            Object.keys(gameData.territories).forEach(territoryId => {
+                const territory = gameData.territories[territoryId];
+                if (!territory.lat || !territory.lng) return;
+                
+                const distance = calculateDistance(
+                    userPosition.lat, userPosition.lng,
+                    territory.lat, territory.lng
+                );
+                
+                if (distance <= territory.radius) {
+                    nearbyTerritories.push(territory.name);
+                    
+                    if (territory.owner !== currentTeam) {
+                        enableTerritoryCapture(territoryId);
+                    }
+                } else {
+                    disableTerritoryCapture(territoryId);
+                }
+            });
+            
+            if (nearbyTerritories.length > 0) {
+                showNotification(`📍 Inside: ${nearbyTerritories.join(', ')}`, 'success');
+            }
+            
+            renderTerritories();
+            updateDebugInfo();
+        }
+        
+        function enableTerritoryCapture(territoryId) {
+            const element = document.querySelector(`[data-territory="${territoryId}"] .capture-button`);
+            if (element) {
+                element.classList.add('available');
+                element.style.display = 'block';
+            }
+        }
+        
+        function disableTerritoryCapture(territoryId) {
+            const element = document.querySelector(`[data-territory="${territoryId}"] .capture-button`);
+            if (element) {
+                element.classList.remove('available');
+                element.style.display = 'none';
+            }
+        }
+        
+        function loadTerritories() {
+            if (!isFirebaseEnabled) {
+                console.log("Firebase disabled, using local data");
+                return;
+            }
+            
+            console.log("📍 Loading territories from Firebase");
+            const territoriesRef = ref(db, 'raid/domination/territories');
+            onValue(territoriesRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    console.log("✅ Territories loaded:", Object.keys(data).length);
+                    gameData.territories = data;
+                } else {
+                    console.log("⚠️ No territories found in Firebase");
+                    gameData.territories = {};
+                }
+                renderTerritories();
+                updateMapMarkers();
+                updateDebugInfo();
+            }, (error) => {
+                console.error("❌ Error loading territories:", error);
+            });
+        }
+        
+        window.captureTerritory = function(territoryId) {
+            console.log(`🎯 Capture attempt: ${territoryId}`);
+            
+            if (!gameActive) {
+                showNotification('⚠️ Game hasn\'t started yet!', 'warning');
+                return;
+            }
+            
+            const territory = gameData.territories[territoryId];
+            if (!territory) {
+                console.error("❌ Territory not found:", territoryId);
+                showNotification('Error: Territory not found', 'error');
+                return;
+            }
+            
+            if (!userPosition) {
+                showNotification('❌ GPS not available', 'error');
+                return;
+            }
+            
+            const distance = calculateDistance(
+                userPosition.lat, userPosition.lng,
+                territory.lat, territory.lng
+            );
+            
+            if (distance > territory.radius) {
+                showNotification(`❌ Too far! Need to be within ${territory.radius}m`, 'error');
+                return;
+            }
+            
+            const oldOwner = territory.owner;
+            
+            territory.owner = currentTeam;
+            territory.controlTime = 0;
+            territory.lastUpdate = Date.now();
+            
+            if (isFirebaseEnabled) {
+                syncTerritoryCapture(territoryId);
+            }
+            
+            updateMapMarkers();
+            
+            if (oldOwner && oldOwner !== currentTeam) {
+                const oldTeamName = gameData.teams[oldOwner].name;
+                showNotification(`⚔️ Territory captured from ${oldTeamName}!`, 'battle');
+            } else if (!oldOwner) {
+                showNotification(`🏰 ${territory.name} captured!`, 'success');
+            } else {
+                showNotification(`✅ ${territory.name} was already ours!`, 'success');
+            }
+            
+            renderTerritories();
+            updateUI();
+            updateDebugInfo();
+        };
+        
+        function renderTerritories() {
+            const container = document.getElementById('territoriesList');
+            container.innerHTML = '';
+            
+            const territoryIds = Object.keys(gameData.territories);
+            
+            territoryIds.forEach(territoryId => {
+                const territory = gameData.territories[territoryId];
+                const div = document.createElement('div');
+                div.className = 'territory';
+                div.setAttribute('data-territory', territoryId);
+                
+                let ownerClass = 'neutral';
+                let ownerText = 'Neutral';
+                let ownerStyle = 'background: #bdbdbd;';
+                
+                if (territory.owner) {
+                    ownerClass = `team-${territory.owner.toLowerCase()}`;
+                    ownerText = gameData.teams[territory.owner].name;
+                    ownerStyle = `background: ${gameData.teams[territory.owner].color};`;
+                }
+                
+                div.className += ` ${ownerClass}`;
+                
+                let distance = '';
+                if (userPosition && territory.lat && territory.lng) {
+                    const dist = calculateDistance(
+                        userPosition.lat, userPosition.lng,
+                        territory.lat, territory.lng
+                    );
+                    distance = Math.round(dist);
+                }
+                
+                div.innerHTML = `
+                    <div class="territory-header">
+                        <div class="territory-name">${territory.name || territoryId}</div>
+                        <div class="territory-owner" style="${ownerStyle}">${ownerText}</div>
+                    </div>
+                    <div class="territory-info">
+                        <div class="info-item">
+                            <span class="info-value">${territory.pointsPerMinute || 0}</span>
+                            <span class="info-label">pts/min</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-value">${'★'.repeat(territory.difficulty || 1)}</span>
+                            <span class="info-label">difficulty</span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-value">${distance || '?'}m</span>
+                            <span class="info-label">distance</span>
+                        </div>
+                    </div>
+                    <div class="territory-progress">
+                        <div class="progress-fill ${ownerClass}" style="width: ${Math.min(territory.controlTime || 0, 50) * 2}%"></div>
+                    </div>
+                    <p style="color: #666; margin-bottom: 10px;">${territory.description || 'No description'}</p>
+                    <div style="background: ${distance && distance <= territory.radius ? '#e8f5e8' : '#ffebee'}; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 0.9em;">
+                        ${distance && distance <= territory.radius ? 
+                            `🟢 INSIDE ZONE (${Math.round(distance)}m of ${territory.radius}m)` : 
+                            `🔴 OUTSIDE ZONE (${Math.round(distance || 0)}m of ${territory.radius}m)`}
+                    </div>
+                    <button class="capture-button" onclick="captureTerritory('${territoryId}')" 
+                            style="display: ${distance && distance <= territory.radius && territory.owner !== currentTeam ? 'block' : 'none'};">
+                        ${TEAM_CONFIG.teams[currentTeam].icon} Capture for ${TEAM_CONFIG.teams[currentTeam].name}
+                    </button>
+                `;
+                
+                container.appendChild(div);
+            });
+        }
+        
+        function updateMapMarkers() {
+            territoryMarkers.forEach(markerObj => {
+                if (markerObj.marker) map.removeLayer(markerObj.marker);
+                if (markerObj.circle) map.removeLayer(markerObj.circle);
+            });
+            territoryMarkers = [];
+            
+            Object.keys(gameData.territories).forEach(territoryId => {
+                const territory = gameData.territories[territoryId];
+                if (!territory.lat || !territory.lng || isNaN(territory.lat) || isNaN(territory.lng)) {
+                    return;
+                }
+                
+                let color = '#bdbdbd';
+                if (territory.owner && gameData.teams[territory.owner]) {
+                    color = gameData.teams[territory.owner].color;
+                }
+                
+                try {
+                    const marker = L.circleMarker([territory.lat, territory.lng], {
+                        radius: territory.type === 'legendary' ? 12 : 8,
+                        fillColor: color,
+                        color: 'white',
+                        weight: 3,
+                        fillOpacity: 0.8
+                    }).addTo(map);
+                    
+                    const circle = L.circle([territory.lat, territory.lng], {
+                        radius: territory.radius || 50,
+                        fillColor: color,
+                        color: color,
+                        weight: 2,
+                        fillOpacity: 0.1,
+                        dashArray: '5, 5'
+                    }).addTo(map);
+                    
+                    marker.bindPopup(`
+                        <b>${territory.name || territoryId}</b><br>
+                        ${territory.description || ''}<br>
+                        <strong>${territory.pointsPerMinute || 0} pts/min</strong><br>
+                        Radius: ${territory.radius || 0}m<br>
+                        Difficulty: ${'★'.repeat(territory.difficulty || 1)}<br>
+                        <small>Owner: ${territory.owner ? gameData.teams[territory.owner].name : 'Neutral'}</small>
+                    `);
+                    
+                    territoryMarkers.push({ marker, circle, territoryId });
+                } catch (error) {
+                    console.error(`❌ Error adding marker for ${territoryId}:`, error);
+                }
+            });
+        }
+        
+        function updateUI() {
+            document.getElementById('teamScore').textContent = gameData.teams[currentTeam].score || 0;
+            
+            const ownedTerritories = Object.values(gameData.territories)
+                .filter(t => t.owner === currentTeam).length;
+            document.getElementById('territoriesOwned').textContent = ownedTerritories;
+            
+            const pointsPerMin = Object.values(gameData.territories)
+                .filter(t => t.owner === currentTeam)
+                .reduce((sum, t) => sum + (t.pointsPerMinute || 0), 0);
+            document.getElementById('pointsPerMin').textContent = pointsPerMin;
+            
+            document.getElementById('scoreA').textContent = `${gameData.teams.A.score || 0} pts`;
+            document.getElementById('scoreB').textContent = `${gameData.teams.B.score || 0} pts`;
+            document.getElementById('scoreC').textContent = `${gameData.teams.C.score || 0} pts`;
+            
+            document.querySelectorAll('.team-score').forEach(el => {
+                el.style.border = '2px solid transparent';
+            });
+            
+            const ourTeamElement = document.querySelector(`.team-score.team-${currentTeam.toLowerCase()}`);
+            if (ourTeamElement) {
+                ourTeamElement.style.border = `2px solid ${TEAM_CONFIG.teams[currentTeam].color}`;
+                ourTeamElement.style.background = `${TEAM_CONFIG.teams[currentTeam].color}20`;
+            }
+        }
+        
+        function updateDebugInfo() {
+            if (!debugMode) return;
+            
+            let nearbyTerritories = 0;
+            let capturableCount = 0;
+            
+            if (userPosition) {
+                Object.keys(gameData.territories).forEach(territoryId => {
+                    const territory = gameData.territories[territoryId];
+                    if (territory.lat && territory.lng) {
+                        const distance = calculateDistance(
+                            userPosition.lat, userPosition.lng,
+                            territory.lat, territory.lng
+                        );
+                        if (distance <= territory.radius) {
+                            nearbyTerritories++;
+                            if (territory.owner !== currentTeam) {
+                                capturableCount++;
+                            }
+                        }
+                    }
+                });
+            }
+            
+            document.getElementById('debugFirebase').textContent = isFirebaseEnabled ? 'ON' : 'OFF';
+            document.getElementById('debugGameActive').textContent = gameActive ? 'YES' : 'NO';
+            document.getElementById('debugTerritories').textContent = Object.keys(gameData.territories).length;
+            document.getElementById('debugLastUpdate').innerHTML = `
+                ${new Date().toLocaleTimeString()}<br>
+                Nearby zones: ${nearbyTerritories}<br>
+                Capturable: ${capturableCount}<br>
+                GPS Accuracy: ±${userPosition ? Math.round(userPosition.accuracy) : '?'}m
+            `;
+        }
+        
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('floatingNotification');
+            notification.textContent = message;
+            notification.className = `floating-notification ${type}`;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 4000);
+        }
+        
+        function syncTerritoryCapture(territoryId) {
+            if (!isFirebaseEnabled || !db) {
+                console.warn("⚠️ Firebase not available for sync");
+                return;
+            }
+            
+            const territory = gameData.territories[territoryId];
+            
+            const updates = {
+                [`raid/domination/territories/${territoryId}/owner`]: currentTeam,
+                [`raid/domination/territories/${territoryId}/lastUpdate`]: serverTimestamp(),
+                [`raid/domination/territories/${territoryId}/controlTime`]: 0
+            };
+            
+            import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js')
+                .then(({ update }) => {
+                    return update(ref(db), updates);
+                })
+                .then(() => {
+                    console.log(`✅ Territory ${territoryId} synced successfully`);
+                    showNotification(`📡 Synced with server!`, 'success');
+                })
+                .catch((error) => {
+                    console.error(`❌ Error syncing ${territoryId}:`, error);
+                    showNotification(`❌ Sync error`, 'error');
+                });
+        }
+        
+        function updateTeamPosition() {
+            if (!isFirebaseEnabled || !db || !userPosition) return;
+            
+            const positionRef = ref(db, `raid/domination/positions/${currentTeam}`);
+            set(positionRef, {
+                lat: userPosition.lat,
+                lng: userPosition.lng,
+                timestamp: serverTimestamp(),
+                accuracy: userPosition.accuracy
+            });
+        }
+        
+        function listenForUpdates() {
+            if (!isFirebaseEnabled || !db) return;
+            
+            const gameRef = ref(db, 'raid/domination/gameState');
+            onValue(gameRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.val();
+                    const wasActive = gameActive;
+                    gameActive = data.active || false;
+                    
+                    if (gameActive && !wasActive) {
+                        showNotification('🚀 Game started! Go capture territories!', 'success');
+                        document.getElementById('battleMode').style.display = 'block';
+                    } else if (!gameActive && wasActive) {
+                        showNotification('⏸️ Game paused', 'warning');
+                        document.getElementById('battleMode').style.display = 'none';
+                    }
+                }
+                updateDebugInfo();
+            });
+            
+            const scoresRef = ref(db, 'raid/domination/scores');
+            onValue(scoresRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const scores = snapshot.val();
+                    Object.keys(scores).forEach(team => {
+                        if (gameData.teams[team]) {
+                            gameData.teams[team].score = scores[team] || 0;
+                        }
+                    });
+                    updateUI();
+                }
+            });
+            
+            const territoriesRef = ref(db, 'raid/domination/territories');
+            onValue(territoriesRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const territories = snapshot.val();
+                    
+                    Object.keys(territories).forEach(terrId => {
+                        const newData = territories[terrId];
+                        const oldData = gameData.territories[terrId];
+                        
+                        if (oldData && oldData.owner !== newData.owner) {
+                            const territoryName = newData.name || terrId;
+                            
+                            if (newData.owner === currentTeam) {
+                                showNotification(`🎉 We captured ${territoryName}!`, 'success');
+                            } else if (oldData.owner === currentTeam && newData.owner) {
+                                const newOwnerName = gameData.teams[newData.owner].name;
+                                showNotification(`💔 We lost ${territoryName} to ${newOwnerName}!`, 'error');
+                            }
+                        }
+                        
+                        gameData.territories[terrId] = newData;
+                    });
+                    
+                    renderTerritories();
+                    updateMapMarkers();
+                    updateUI();
+                    updateDebugInfo();
+                }
+            });
+        }
+        
+        window.addEventListener('beforeunload', function() {
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+            }
+        });
+    </script>
+</body>
+</html>
