@@ -1,0 +1,1037 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🏗️ Editor de Zonas - Domínio de Território</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🏗️</text></svg>">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        .header {
+            background: white;
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 20px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .header h1 {
+            color: #6366f1;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+        
+        .controls {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 25px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn-primary { background: #6366f1; color: white; }
+        .btn-success { background: #10b981; color: white; }
+        .btn-warning { background: #f59e0b; color: white; }
+        .btn-danger { background: #ef4444; color: white; }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+        
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            height: calc(100vh - 200px);
+        }
+        
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+                height: auto;
+            }
+        }
+        
+        .map-section {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .map-container {
+            flex: 1;
+            border-radius: 15px;
+            overflow: hidden;
+            position: relative;
+            min-height: 500px;
+        }
+        
+        .map-info {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+        }
+        
+        .zones-section {
+            background: white;
+            border-radius: 20px;
+            padding: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .zones-list {
+            flex: 1;
+            overflow-y: auto;
+            max-height: 600px;
+        }
+        
+        .zone-card {
+            background: #f8fafc;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 3px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        
+        .zone-card:hover {
+            border-color: #6366f1;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(99, 102, 241, 0.2);
+        }
+        
+        .zone-card.editing {
+            border-color: #10b981;
+            background: #ecfdf5;
+        }
+        
+        .zone-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .zone-name {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #6366f1;
+        }
+        
+        .zone-type {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-weight: bold;
+            color: white;
+        }
+        
+        .type-central { background: #10b981; }
+        .type-intermediate { background: #f59e0b; }
+        .type-remote { background: #ef4444; }
+        .type-legendary { background: #8b5cf6; }
+        
+        .zone-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .stat {
+            text-align: center;
+            background: white;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .stat-value {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #6366f1;
+            display: block;
+        }
+        
+        .stat-label {
+            font-size: 0.8em;
+            color: #64748b;
+        }
+        
+        .zone-actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+        
+        .zone-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 0.8em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-edit { background: #6366f1; color: white; }
+        .btn-locate { background: #10b981; color: white; }
+        .btn-delete { background: #ef4444; color: white; }
+        .btn-save { background: #059669; color: white; }
+        .btn-cancel { background: #6b7280; color: white; }
+        
+        .zone-btn:hover {
+            transform: scale(1.05);
+        }
+        
+        .edit-form {
+            display: none;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 15px;
+            border: 2px solid #10b981;
+        }
+        
+        .edit-form.active {
+            display: block;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-label {
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #374151;
+            font-size: 0.9em;
+        }
+        
+        .form-input {
+            padding: 10px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 0.9em;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: #6366f1;
+        }
+        
+        .form-select {
+            padding: 10px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 0.9em;
+            background: white;
+            cursor: pointer;
+        }
+        
+        .connection-status {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-weight: bold;
+            z-index: 1000;
+        }
+        
+        .connected { background: #10b981; color: white; }
+        .disconnected { background: #ef4444; color: white; }
+        
+        .notification {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: #10b981;
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 1001;
+            display: none;
+            text-align: center;
+            font-weight: bold;
+            max-width: 300px;
+        }
+        
+        .notification.error { background: #ef4444; }
+        .notification.warning { background: #f59e0b; }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1002;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+        
+        .modal-title {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #6366f1;
+        }
+        
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        
+        .close:hover {
+            color: #6366f1;
+        }
+        
+        .coordinates-display {
+            background: #f0f9ff;
+            border: 2px solid #0ea5e9;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+            font-family: monospace;
+        }
+        
+        .legend {
+            background: #f8fafc;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .legend-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            color: #374151;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 8px 0;
+            font-size: 0.9em;
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+    <div class="connection-status" id="connectionStatus">🔄 Conectando...</div>
+    
+    <div class="notification" id="notification"></div>
+    
+    <div class="container">
+        <div class="header">
+            <h1>🏗️ Editor de Zonas</h1>
+            <p>Gestão Avançada dos Territórios de Domínio</p>
+            
+            <div class="controls">
+                <button class="btn btn-success" onclick="addNewZone()">
+                    ➕ Nova Zona
+                </button>
+                <button class="btn btn-warning" onclick="backupZones()">
+                    💾 Backup
+                </button>
+                <button class="btn btn-primary" onclick="refreshData()">
+                    🔄 Atualizar
+                </button>
+            </div>
+        </div>
+        
+        <div class="main-grid">
+            <!-- Mapa -->
+            <div class="map-section">
+                <div class="map-info">
+                    <strong>🗺️ Mapa Interativo</strong><br>
+                    Click no mapa para definir coordenadas ao criar/editar zonas
+                </div>
+                
+                <div class="legend">
+                    <div class="legend-title">📍 Legenda das Zonas</div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #10b981;"></div>
+                        <span>Central (Fácil acesso)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #f59e0b;"></div>
+                        <span>Intermédio (Acesso médio)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #ef4444;"></div>
+                        <span>Remoto (Difícil acesso)</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #8b5cf6;"></div>
+                        <span>Lendário (Acesso muito difícil)</span>
+                    </div>
+                </div>
+                
+                <div class="map-container">
+                    <div id="map" style="height: 100%; width: 100%;"></div>
+                </div>
+            </div>
+            
+            <!-- Lista de Zonas -->
+            <div class="zones-section">
+                <h3 style="color: #6366f1; margin-bottom: 20px; text-align: center;">
+                    🏰 Zonas Configuradas (<span id="zoneCount">0</span>)
+                </h3>
+                
+                <div class="zones-list" id="zonesList">
+                    <!-- Zones will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Modal Nova Zona -->
+    <div id="newZoneModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">➕ Criar Nova Zona</h2>
+                <span class="close" onclick="closeNewZoneModal()">&times;</span>
+            </div>
+            
+            <form id="newZoneForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Nome da Zona:</label>
+                        <input type="text" class="form-input" id="newZoneName" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Tipo:</label>
+                        <select class="form-select" id="newZoneType">
+                            <option value="central">🟢 Central</option>
+                            <option value="intermediate">🟡 Intermédio</option>
+                            <option value="remote">🔴 Remoto</option>
+                            <option value="legendary">🟣 Lendário</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Descrição:</label>
+                    <input type="text" class="form-input" id="newZoneDescription">
+                </div>
+                
+                <div class="coordinates-display" id="coordsDisplay">
+                    📍 Click no mapa para definir coordenadas
+                </div>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Raio (metros):</label>
+                        <input type="number" class="form-input" id="newZoneRadius" min="10" max="500" value="50">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Pontos/Minuto:</label>
+                        <input type="number" class="form-input" id="newZonePoints" min="1" max="50" value="5">
+                    </div>
+                </div>
+                
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label class="form-label">Dificuldade (1-5):</label>
+                        <select class="form-select" id="newZoneDifficulty">
+                            <option value="1">⭐ Muito Fácil</option>
+                            <option value="2">⭐⭐ Fácil</option>
+                            <option value="3">⭐⭐⭐ Médio</option>
+                            <option value="4">⭐⭐⭐⭐ Difícil</option>
+                            <option value="5">⭐⭐⭐⭐⭐ Muito Difícil</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div style="display: flex; gap: 15px; justify-content: flex-end; margin-top: 25px;">
+                    <button type="button" class="btn btn-cancel" onclick="closeNewZoneModal()">Cancelar</button>
+                    <button type="submit" class="btn btn-success">Criar Zona</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase, ref, set, remove, onValue, serverTimestamp, update } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyDMQNN57N8v2WJaIL_sbQEptMhVD0_96M4",
+            authDomain: "raid-pioneiros-2025.firebaseapp.com",
+            databaseURL: "https://raid-pioneiros-2025-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "raid-pioneiros-2025",
+            storageBucket: "raid-pioneiros-2025.firebasestorage.app",
+            messagingSenderId: "364137677559",
+            appId: "1:364137677559:web:2be68cd6dcd6ccbf5ac9f2"
+        };
+        
+        let app, db, map;
+        let zones = {};
+        let markers = [];
+        let isFirebaseEnabled = false;
+        let currentEditingZone = null;
+        let selectedCoords = null;
+        
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            initFirebase();
+            initMap();
+            loadZones();
+            
+            // Form submission
+            document.getElementById('newZoneForm').addEventListener('submit', handleNewZoneSubmit);
+        });
+        
+        function initFirebase() {
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getDatabase(app);
+                isFirebaseEnabled = true;
+                updateConnectionStatus('connected');
+                console.log('✅ Firebase conectado');
+            } catch (error) {
+                console.error('❌ Erro Firebase:', error);
+                updateConnectionStatus('disconnected');
+                showNotification('Erro de conexão Firebase', 'error');
+            }
+        }
+        
+        function updateConnectionStatus(status) {
+            const statusEl = document.getElementById('connectionStatus');
+            if (status === 'connected') {
+                statusEl.textContent = '🟢 Conectado';
+                statusEl.className = 'connection-status connected';
+            } else {
+                statusEl.textContent = '🔴 Desconectado';
+                statusEl.className = 'connection-status disconnected';
+            }
+        }
+        
+        function initMap() {
+            map = L.map('map').setView([38.0658, -8.7734], 14);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+            
+            // Ensure map renders properly
+            setTimeout(() => {
+                map.invalidateSize();
+            }, 250);
+            
+            // Click handler for coordinates
+            map.on('click', function(e) {
+                selectedCoords = {
+                    lat: e.latlng.lat,
+                    lng: e.latlng.lng
+                };
+                
+                // Update coordinate display
+                const display = document.getElementById('coordsDisplay');
+                display.innerHTML = `📍 Lat: ${selectedCoords.lat.toFixed(6)}, Lng: ${selectedCoords.lng.toFixed(6)}`;
+                display.style.background = '#ecfdf5';
+                display.style.borderColor = '#10b981';
+                
+                // If editing a zone, update its coordinates
+                if (currentEditingZone) {
+                    const form = document.querySelector(`#edit-form-${currentEditingZone}`);
+                    if (form) {
+                        form.querySelector(`#edit-lat-${currentEditingZone}`).value = selectedCoords.lat.toFixed(6);
+                        form.querySelector(`#edit-lng-${currentEditingZone}`).value = selectedCoords.lng.toFixed(6);
+                    }
+                }
+                
+                showNotification(`📍 Coordenadas selecionadas: ${selectedCoords.lat.toFixed(4)}, ${selectedCoords.lng.toFixed(4)}`, 'success');
+            });
+        }
+        
+        function loadZones() {
+            if (!isFirebaseEnabled) {
+                console.log('Firebase não disponível');
+                return;
+            }
+            
+            const zonesRef = ref(db, 'raid/domination/territories');
+            onValue(zonesRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    zones = snapshot.val();
+                    console.log(`✅ ${Object.keys(zones).length} zonas carregadas`);
+                } else {
+                    zones = {};
+                    console.log('⚠️ Nenhuma zona encontrada');
+                }
+                renderZones();
+                updateMapMarkers();
+            });
+        }
+        
+        function renderZones() {
+            const container = document.getElementById('zonesList');
+            const countEl = document.getElementById('zoneCount');
+            
+            container.innerHTML = '';
+            countEl.textContent = Object.keys(zones).length;
+            
+            Object.keys(zones).forEach(zoneId => {
+                const zone = zones[zoneId];
+                const card = document.createElement('div');
+                card.className = 'zone-card';
+                card.id = `zone-${zoneId}`;
+                
+                const typeColors = {
+                    central: '#10b981',
+                    intermediate: '#f59e0b',
+                    remote: '#ef4444',
+                    legendary: '#8b5cf6'
+                };
+                
+                const typeLabels = {
+                    central: '🟢 Central',
+                    intermediate: '🟡 Intermédio',
+                    remote: '🔴 Remoto',
+                    legendary: '🟣 Lendário'
+                };
+                
+                card.innerHTML = `
+                    <div class="zone-header">
+                        <div class="zone-name">${zone.name || zoneId}</div>
+                        <div class="zone-type type-${zone.type || 'central'}">${typeLabels[zone.type] || '🟢 Central'}</div>
+                    </div>
+                    
+                    <div class="zone-stats">
+                        <div class="stat">
+                            <span class="stat-value">${zone.pointsPerMinute || 0}</span>
+                            <span class="stat-label">pts/min</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value">${zone.radius || 0}m</span>
+                            <span class="stat-label">raio</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value">${'★'.repeat(zone.difficulty || 1)}</span>
+                            <span class="stat-label">dificuldade</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value">${zone.lat ? zone.lat.toFixed(4) : 'N/A'}</span>
+                            <span class="stat-label">latitude</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-value">${zone.lng ? zone.lng.toFixed(4) : 'N/A'}</span>
+                            <span class="stat-label">longitude</span>
+                        </div>
+                    </div>
+                    
+                    <p style="color: #64748b; margin-bottom: 15px; font-size: 0.9em;">
+                        ${zone.description || 'Sem descrição'}
+                    </p>
+                    
+                    <div class="zone-actions">
+                        <button class="zone-btn btn-edit" onclick="editZone('${zoneId}')">
+                            ✏️ Editar
+                        </button>
+                        <button class="zone-btn btn-locate" onclick="locateZone('${zoneId}')">
+                            📍 Localizar
+                        </button>
+                        <button class="zone-btn btn-delete" onclick="deleteZone('${zoneId}')">
+                            🗑️ Eliminar
+                        </button>
+                    </div>
+                    
+                    <div class="edit-form" id="edit-form-${zoneId}">
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Nome:</label>
+                                <input type="text" class="form-input" id="edit-name-${zoneId}" value="${zone.name || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Tipo:</label>
+                                <select class="form-select" id="edit-type-${zoneId}">
+                                    <option value="central" ${zone.type === 'central' ? 'selected' : ''}>🟢 Central</option>
+                                    <option value="intermediate" ${zone.type === 'intermediate' ? 'selected' : ''}>🟡 Intermédio</option>
+                                    <option value="remote" ${zone.type === 'remote' ? 'selected' : ''}>🔴 Remoto</option>
+                                    <option value="legendary" ${zone.type === 'legendary' ? 'selected' : ''}>🟣 Lendário</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Descrição:</label>
+                            <input type="text" class="form-input" id="edit-description-${zoneId}" value="${zone.description || ''}">
+                        </div>
+                        
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Latitude:</label>
+                                <input type="number" step="0.000001" class="form-input" id="edit-lat-${zoneId}" value="${zone.lat || ''}">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Longitude:</label>
+                                <input type="number" step="0.000001" class="form-input" id="edit-lng-${zoneId}" value="${zone.lng || ''}">
+                            </div>
+                        </div>
+                        
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label class="form-label">Raio (metros):</label>
+                                <input type="number" class="form-input" id="edit-radius-${zoneId}" min="10" max="500" value="${zone.radius || 50}">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Pontos/Minuto:</label>
+                                <input type="number" class="form-input" id="edit-points-${zoneId}" min="1" max="50" value="${zone.pointsPerMinute || 5}">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Dificuldade:</label>
+                            <select class="form-select" id="edit-difficulty-${zoneId}">
+                                <option value="1" ${zone.difficulty == 1 ? 'selected' : ''}>⭐ Muito Fácil</option>
+                                <option value="2" ${zone.difficulty == 2 ? 'selected' : ''}>⭐⭐ Fácil</option>
+                                <option value="3" ${zone.difficulty == 3 ? 'selected' : ''}>⭐⭐⭐ Médio</option>
+                                <option value="4" ${zone.difficulty == 4 ? 'selected' : ''}>⭐⭐⭐⭐ Difícil</option>
+                                <option value="5" ${zone.difficulty == 5 ? 'selected' : ''}>⭐⭐⭐⭐⭐ Muito Difícil</option>
+                            </select>
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 15px;">
+                            <button class="zone-btn btn-cancel" onclick="cancelEdit('${zoneId}')">Cancelar</button>
+                            <button class="zone-btn btn-save" onclick="saveZone('${zoneId}')">💾 Guardar</button>
+                        </div>
+                    </div>
+                `;
+                
+                container.appendChild(card);
+            });
+        }
+        
+        function updateMapMarkers() {
+            // Clear existing markers
+            markers.forEach(marker => {
+                map.removeLayer(marker.marker);
+                if (marker.circle) map.removeLayer(marker.circle);
+            });
+            markers = [];
+            
+            // Add zone markers
+            Object.keys(zones).forEach(zoneId => {
+                const zone = zones[zoneId];
+                if (!zone.lat || !zone.lng) return;
+                
+                const typeColors = {
+                    central: '#10b981',
+                    intermediate: '#f59e0b',
+                    remote: '#ef4444',
+                    legendary: '#8b5cf6'
+                };
+                
+                const color = typeColors[zone.type] || '#10b981';
+                
+                const marker = L.circleMarker([zone.lat, zone.lng], {
+                    radius: zone.type === 'legendary' ? 12 : 8,
+                    fillColor: color,
+                    color: 'white',
+                    weight: 3,
+                    fillOpacity: 0.8
+                }).addTo(map);
+                
+                const circle = L.circle([zone.lat, zone.lng], {
+                    radius: zone.radius || 50,
+                    fillColor: color,
+                    color: color,
+                    weight: 2,
+                    fillOpacity: 0.1,
+                    dashArray: '5, 5'
+                }).addTo(map);
+                
+                marker.bindPopup(`
+                    <b>${zone.name || zoneId}</b><br>
+                    ${zone.description || ''}<br>
+                    <strong>${zone.pointsPerMinute || 0} pts/min</strong><br>
+                    Raio: ${zone.radius || 0}m<br>
+                    Dificuldade: ${'★'.repeat(zone.difficulty || 1)}
+                `);
+                
+                markers.push({ marker, circle, zoneId });
+            });
+            
+            // Fit map to show all markers
+            if (markers.length > 0) {
+                const group = new L.featureGroup(markers.map(m => m.marker));
+                map.fitBounds(group.getBounds().pad(0.1));
+            }
+        }
+        
+        function showNotification(message, type = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = `notification ${type}`;
+            notification.style.display = 'block';
+            
+            setTimeout(() => {
+                notification.style.display = 'none';
+            }, 3000);
+        }
+        
+        // Global functions
+        window.addNewZone = function() {
+            selectedCoords = null;
+            document.getElementById('coordsDisplay').innerHTML = '📍 Click no mapa para definir coordenadas';
+            document.getElementById('coordsDisplay').style.background = '#f0f9ff';
+            document.getElementById('coordsDisplay').style.borderColor = '#0ea5e9';
+            document.getElementById('newZoneForm').reset();
+            document.getElementById('newZoneModal').style.display = 'block';
+        };
+        
+        window.closeNewZoneModal = function() {
+            document.getElementById('newZoneModal').style.display = 'none';
+            selectedCoords = null;
+        };
+        
+        window.editZone = function(zoneId) {
+            currentEditingZone = zoneId;
+            
+            // Close other edit forms
+            document.querySelectorAll('.edit-form').forEach(form => {
+                form.classList.remove('active');
+            });
+            document.querySelectorAll('.zone-card').forEach(card => {
+                card.classList.remove('editing');
+            });
+            
+            // Open this edit form
+            const form = document.getElementById(`edit-form-${zoneId}`);
+            const card = document.getElementById(`zone-${zoneId}`);
+            
+            form.classList.add('active');
+            card.classList.add('editing');
+            
+            showNotification(`✏️ Editando ${zones[zoneId].name || zoneId}`, 'warning');
+        };
+        
+        window.cancelEdit = function(zoneId) {
+            const form = document.getElementById(`edit-form-${zoneId}`);
+            const card = document.getElementById(`zone-${zoneId}`);
+            
+            form.classList.remove('active');
+            card.classList.remove('editing');
+            
+            currentEditingZone = null;
+            renderZones(); // Reset values
+        };
+        
+        window.saveZone = function(zoneId) {
+            const updatedZone = {
+                name: document.getElementById(`edit-name-${zoneId}`).value,
+                description: document.getElementById(`edit-description-${zoneId}`).value,
+                lat: parseFloat(document.getElementById(`edit-lat-${zoneId}`).value),
+                lng: parseFloat(document.getElementById(`edit-lng-${zoneId}`).value),
+                radius: parseInt(document.getElementById(`edit-radius-${zoneId}`).value),
+                pointsPerMinute: parseInt(document.getElementById(`edit-points-${zoneId}`).value),
+                difficulty: parseInt(document.getElementById(`edit-difficulty-${zoneId}`).value),
+                type: document.getElementById(`edit-type-${zoneId}`).value,
+                // Preserve existing data
+                owner: zones[zoneId].owner || null,
+                controlTime: zones[zoneId].controlTime || 0,
+                lastUpdate: zones[zoneId].lastUpdate || null
+            };
+            
+            // Update Firebase
+            const zoneRef = ref(db, `raid/domination/territories/${zoneId}`);
+            set(zoneRef, updatedZone).then(() => {
+                showNotification(`✅ ${updatedZone.name} atualizada!`, 'success');
+                cancelEdit(zoneId);
+            }).catch(error => {
+                console.error('Error updating zone:', error);
+                showNotification('❌ Erro ao atualizar zona', 'error');
+            });
+        };
+        
+        window.locateZone = function(zoneId) {
+            const zone = zones[zoneId];
+            if (zone.lat && zone.lng) {
+                map.setView([zone.lat, zone.lng], 16);
+                
+                // Find and open popup
+                const marker = markers.find(m => m.zoneId === zoneId);
+                if (marker) {
+                    marker.marker.openPopup();
+                }
+                
+                showNotification(`📍 Centrado em ${zone.name}`, 'success');
+            } else {
+                showNotification('❌ Zona sem coordenadas', 'error');
+            }
+        };
+        
+        window.deleteZone = function(zoneId) {
+            const zone = zones[zoneId];
+            if (confirm(`⚠️ Eliminar "${zone.name || zoneId}"?\n\nEsta ação não pode ser desfeita!`)) {
+                const zoneRef = ref(db, `raid/domination/territories/${zoneId}`);
+                remove(zoneRef).then(() => {
+                    showNotification(`🗑️ ${zone.name} eliminada!`, 'warning');
+                }).catch(error => {
+                    console.error('Error deleting zone:', error);
+                    showNotification('❌ Erro ao eliminar zona', 'error');
+                });
+            }
+        };
+        
+        window.refreshData = function() {
+            loadZones();
+            showNotification('🔄 Dados atualizados!', 'success');
+        };
+        
+        window.backupZones = function() {
+            const backup = {
+                timestamp: new Date().toISOString(),
+                zones: zones
+            };
+            
+            const dataStr = JSON.stringify(backup, null, 2);
+            const dataBlob = new Blob([dataStr], {type: 'application/json'});
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `zones_backup_${new Date().toISOString().split('T')[0]}.json`;
+            link.click();
+            
+            showNotification('💾 Backup criado!', 'success');
+        };
+        
+        function handleNewZoneSubmit(e) {
+            e.preventDefault();
+            
+            if (!selectedCoords) {
+                showNotification('❌ Selecione coordenadas no mapa!', 'error');
+                return;
+            }
+            
+            const name = document.getElementById('newZoneName').value;
+            const zoneId = name.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_]/g, '');
+            
+            if (zones[zoneId]) {
+                showNotification('❌ Já existe uma zona com esse nome!', 'error');
+                return;
+            }
+            
+            const newZone = {
+                name: name,
+                description: document.getElementById('newZoneDescription').value,
+                lat: selectedCoords.lat,
+                lng: selectedCoords.lng,
+                radius: parseInt(document.getElementById('newZoneRadius').value),
+                pointsPerMinute: parseInt(document.getElementById('newZonePoints').value),
+                difficulty: parseInt(document.getElementById('newZoneDifficulty').value),
+                type: document.getElementById('newZoneType').value,
+                owner: null,
+                controlTime: 0,
+                lastUpdate: null
+            };
+            
+            // Save to Firebase
+            const zoneRef = ref(db, `raid/domination/territories/${zoneId}`);
+            set(zoneRef, newZone).then(() => {
+                showNotification(`✅ Zona "${name}" criada!`, 'success');
+                closeNewZoneModal();
+            }).catch(error => {
+                console.error('Error creating zone:', error);
+                showNotification('❌ Erro ao criar zona', 'error');
+            });
+        }
+        
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('newZoneModal');
+            if (event.target === modal) {
+                closeNewZoneModal();
+            }
+        };
+    </script>
+</body>
+</html>
