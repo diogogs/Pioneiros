@@ -484,7 +484,7 @@
         </div>
         
         <div class="battle-mode" id="battleMode">
-            ⚔️ BATTLE MODE ACTIVE! Territory under dispute!
+            Jogo em andamento
         </div>
         
         <div class="status-section">
@@ -890,7 +890,7 @@
             });
             
             if (nearbyTerritories.length > 0) {
-                showNotification(`📍 Inside: ${nearbyTerritories.join(', ')}`, 'success');
+                showNotification(`📍 Dentro da Zona: ${nearbyTerritories.join(', ')}`, 'success');
             }
             
             renderTerritories();
@@ -1241,10 +1241,10 @@
                     gameActive = data.active || false;
                     
                     if (gameActive && !wasActive) {
-                        showNotification('🚀 Game started! Go capture territories!', 'success');
+                        showNotification('🚀 O jogo começou!', 'success');
                         document.getElementById('battleMode').style.display = 'block';
                     } else if (!gameActive && wasActive) {
-                        showNotification('⏸️ Game paused', 'warning');
+                        showNotification('⏸️ Jogo em pausa', 'warning');
                         document.getElementById('battleMode').style.display = 'none';
                     }
                 }
