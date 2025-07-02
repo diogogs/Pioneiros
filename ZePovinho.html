@@ -747,7 +747,8 @@
             
             let nearbyTerritories = [];
             
-            Object.values(gameData.territories).forEach(territory => {
+            Object.keys(gameData.territories).forEach(territoryId => {
+                const territory = gameData.territories[territoryId];
                 if (!territory.lat || !territory.lng) return;
                 
                 const distance = calculateDistance(
@@ -764,14 +765,14 @@
                     // Dentro do território
                     if (territory.owner !== currentTeam) {
                         // Pode capturar
-                        enableTerritoryCapture(territory.id);
+                        enableTerritoryCapture(territoryId);
                         console.log(`🎯 Pode capturar ${territory.name}`);
                     } else {
                         console.log(`👑 Já controlamos ${territory.name}`);
                     }
                 } else {
                     // Fora do território
-                    disableTerritoryCapture(territory.id);
+                    disableTerritoryCapture(territoryId);
                 }
             });
             
@@ -898,13 +899,14 @@
             const container = document.getElementById('territoriesList');
             container.innerHTML = '';
             
-            const territories = Object.values(gameData.territories);
-            console.log(`🏰 Renderizando ${territories.length} territórios`);
+            const territoryIds = Object.keys(gameData.territories);
+            console.log(`🏰 Renderizando ${territoryIds.length} territórios`);
             
-            territories.forEach(territory => {
+            territoryIds.forEach(territoryId => {
+                const territory = gameData.territories[territoryId];
                 const div = document.createElement('div');
                 div.className = 'territory';
-                div.setAttribute('data-territory', territory.id);
+                div.setAttribute('data-territory', territoryId);
                 
                 let ownerClass = 'neutral';
                 let ownerText = 'Neutro';
@@ -929,7 +931,7 @@
                 
                 div.innerHTML = `
                     <div class="territory-header">
-                        <div class="territory-name">${territory.name || territory.id}</div>
+                        <div class="territory-name">${territory.name || territoryId}</div>
                         <div class="territory-owner" style="${ownerStyle}">${ownerText}</div>
                     </div>
                     <div class="territory-info">
@@ -950,7 +952,13 @@
                         <div class="progress-fill ${ownerClass}" style="width: ${Math.min(territory.controlTime || 0, 50) * 2}%"></div>
                     </div>
                     <p style="color: #666; margin-bottom: 10px;">${territory.description || 'Sem descrição'}</p>
-                    <button class="capture-button" onclick="captureTerritory('${territory.id}')">
+                    <div style="background: ${distance && distance <= territory.radius ? '#e8f5e8' : '#ffebee'}; padding: 10px; border-radius: 8px; margin-bottom: 10px; font-size: 0.9em;">
+                        ${distance && distance <= territory.radius ? 
+                            `🟢 DENTRO DA ZONA (${Math.round(distance)}m de ${territory.radius}m)` : 
+                            `🔴 FORA DA ZONA (${Math.round(distance || 0)}m de ${territory.radius}m)`}
+                    </div>
+                    <button class="capture-button" onclick="captureTerritory('${territoryId}')" 
+                            style="display: ${distance && distance <= territory.radius && territory.owner !== currentTeam ? 'block' : 'none'};">
                         🇵🇹 Capturar para Zé Povinho
                     </button>
                 `;
@@ -970,9 +978,10 @@
             territoryMarkers = [];
             
             // Add territory markers
-            Object.values(gameData.territories).forEach(territory => {
+            Object.keys(gameData.territories).forEach(territoryId => {
+                const territory = gameData.territories[territoryId];
                 if (!territory.lat || !territory.lng || isNaN(territory.lat) || isNaN(territory.lng)) {
-                    console.warn(`⚠️ Coordenadas inválidas para ${territory.id}:`, territory.lat, territory.lng);
+                    console.warn(`⚠️ Coordenadas inválidas para ${territoryId}:`, territory.lat, territory.lng);
                     return;
                 }
                 
@@ -1000,7 +1009,7 @@
                     }).addTo(map);
                     
                     marker.bindPopup(`
-                        <b>${territory.name || territory.id}</b><br>
+                        <b>${territory.name || territoryId}</b><br>
                         ${territory.description || ''}<br>
                         <strong>${territory.pointsPerMinute || 0} pts/min</strong><br>
                         Raio: ${territory.radius || 0}m<br>
@@ -1008,9 +1017,9 @@
                         <small>Proprietário: ${territory.owner ? gameData.teams[territory.owner].name : 'Neutro'}</small>
                     `);
                     
-                    territoryMarkers.push({ marker, circle, territoryId: territory.id });
+                    territoryMarkers.push({ marker, circle, territoryId });
                 } catch (error) {
-                    console.error(`❌ Erro ao adicionar marcador para ${territory.id}:`, error);
+                    console.error(`❌ Erro ao adicionar marcador para ${territoryId}:`, error);
                 }
             });
             
@@ -1056,10 +1065,36 @@
         function updateDebugInfo() {
             if (!debugMode) return;
             
+            let nearbyTerritories = 0;
+            let capturableCount = 0;
+            
+            if (userPosition) {
+                Object.keys(gameData.territories).forEach(territoryId => {
+                    const territory = gameData.territories[territoryId];
+                    if (territory.lat && territory.lng) {
+                        const distance = calculateDistance(
+                            userPosition.lat, userPosition.lng,
+                            territory.lat, territory.lng
+                        );
+                        if (distance <= territory.radius) {
+                            nearbyTerritories++;
+                            if (territory.owner !== currentTeam) {
+                                capturableCount++;
+                            }
+                        }
+                    }
+                });
+            }
+            
             document.getElementById('debugFirebase').textContent = isFirebaseEnabled ? 'ON' : 'OFF';
             document.getElementById('debugGameActive').textContent = gameActive ? 'YES' : 'NO';
             document.getElementById('debugTerritories').textContent = Object.keys(gameData.territories).length;
-            document.getElementById('debugLastUpdate').textContent = new Date().toLocaleTimeString();
+            document.getElementById('debugLastUpdate').innerHTML = `
+                ${new Date().toLocaleTimeString()}<br>
+                Zonas próximas: ${nearbyTerritories}<br>
+                Capturáveis: ${capturableCount}<br>
+                GPS Accuracy: ±${userPosition ? Math.round(userPosition.accuracy) : '?'}m
+            `;
         }
         
         function showNotification(message, type = 'success') {
@@ -1074,18 +1109,34 @@
         }
         
         function syncTerritoryCapture(territoryId) {
-            if (!isFirebaseEnabled || !db) return;
+            if (!isFirebaseEnabled || !db) {
+                console.warn("⚠️ Firebase não disponível para sincronização");
+                return;
+            }
             
             const territory = gameData.territories[territoryId];
-            const territoryRef = ref(db, `raid/domination/territories/${territoryId}`);
-            set(territoryRef, {
-                ...territory,
-                owner: currentTeam,
-                lastUpdate: serverTimestamp(),
-                capturedBy: 'Zé Povinho'
-            });
+            console.log(`🔄 Sincronizando território ${territoryId}:`, territory);
             
-            console.log(`🔄 Sincronizado território ${territoryId} com Firebase`);
+            // Atualizar múltiplos campos individualmente para garantir sincronização
+            const updates = {
+                [`raid/domination/territories/${territoryId}/owner`]: currentTeam,
+                [`raid/domination/territories/${territoryId}/lastUpdate`]: serverTimestamp(),
+                [`raid/domination/territories/${territoryId}/controlTime`]: 0
+            };
+            
+            // Usar update em vez de set para melhor sincronização
+            import('https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js')
+                .then(({ update }) => {
+                    return update(ref(db), updates);
+                })
+                .then(() => {
+                    console.log(`✅ Território ${territoryId} sincronizado com sucesso`);
+                    showNotification(`📡 Sincronizado com servidor!`, 'success');
+                })
+                .catch((error) => {
+                    console.error(`❌ Erro ao sincronizar ${territoryId}:`, error);
+                    showNotification(`❌ Erro de sincronização`, 'error');
+                });
         }
         
         function updateTeamPosition() {
