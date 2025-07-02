@@ -24,7 +24,7 @@
         :root {
             --primary-color: #2196f3;
             --primary-dark: #1976d2;
-            --team-icon: '🛡️';
+            --team-icon: '🔵';
         }
         
         .container {
@@ -475,7 +475,7 @@
             </div>
             
             <div class="connection-status" id="connectionStatus">
-                🔄 Connecting to game...
+                🔄 A conectar ao jogo...
             </div>
 
             <div class="debug-info" id="debugInfo">
@@ -488,14 +488,14 @@
         </div>
         
         <div class="battle-mode" id="battleMode">
-            ⚔️ BATTLE MODE ACTIVE! Territory under dispute!
+            Jogo em andamento
         </div>
         
         <div class="status-section">
             <div class="gps-status">
                 <div class="gps-indicator" id="gpsIndicator"></div>
                 <div>
-                    <strong id="gpsStatus">Activating GPS...</strong>
+                    <strong id="gpsStatus">A ativar GPS...</strong>
                     <div id="gpsCoords" style="font-size: 0.8em; color: #666;"></div>
                 </div>
             </div>
@@ -524,7 +524,7 @@
             
             <div class="map-controls">
                 <button class="map-control-btn" id="fullscreenBtn" title="Toggle Fullscreen">
-                    📺
+                    ⛶
                 </button>
                 <button class="map-control-btn" id="centerBtn" title="Center on Player">
                     🎯
@@ -649,12 +649,12 @@
             if (isMapFullscreen) {
                 mapContainer.classList.add('fullscreen');
                 document.body.classList.add('map-fullscreen');
-                fullscreenBtn.textContent = '📱';
+                fullscreenBtn.textContent = '⛶';
                 fullscreenBtn.title = 'Exit Fullscreen';
             } else {
                 mapContainer.classList.remove('fullscreen');
                 document.body.classList.remove('map-fullscreen');
-                fullscreenBtn.textContent = '📺';
+                fullscreenBtn.textContent = '⛶';
                 fullscreenBtn.title = 'Toggle Fullscreen';
             }
             
@@ -908,7 +908,7 @@
             });
             
             if (nearbyTerritories.length > 0) {
-                showNotification(`📍 Inside: ${nearbyTerritories.join(', ')}`, 'success');
+                showNotification(`📍 Dentro da zona: ${nearbyTerritories.join(', ')}`, 'success');
             }
             
             renderTerritories();
@@ -1075,7 +1075,7 @@
                     </div>
                     <button class="capture-button" onclick="captureTerritory('${territoryId}')" 
                             style="display: ${distance && distance <= territory.radius && territory.owner !== currentTeam ? 'block' : 'none'};">
-                        ${TEAM_CONFIG.teams[currentTeam].icon} Capturar
+                        ${TEAM_CONFIG.teams[currentTeam].icon} Capturar}
                     </button>
                 `;
                 
@@ -1259,10 +1259,10 @@
                     gameActive = data.active || false;
                     
                     if (gameActive && !wasActive) {
-                        showNotification('🚀 Game started! Go capture territories!', 'success');
+                        showNotification('🚀 O jogo começou!', 'success');
                         document.getElementById('battleMode').style.display = 'block';
                     } else if (!gameActive && wasActive) {
-                        showNotification('⏸️ Game paused', 'warning');
+                        showNotification('⏸️ Jogo em pausa', 'warning');
                         document.getElementById('battleMode').style.display = 'none';
                     }
                 }
